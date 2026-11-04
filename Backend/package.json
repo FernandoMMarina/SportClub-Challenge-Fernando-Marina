@@ -1,0 +1,21 @@
+{
+  "name": "backend",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node --env-file=.env ./bin/www",
+    "dev": "node --env-file=.env --watch ./bin/www",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.3",
+    "express-rate-limit": "^8.7.3",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.12.1",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
