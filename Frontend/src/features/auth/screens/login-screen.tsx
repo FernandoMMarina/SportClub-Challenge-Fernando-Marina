@@ -1,25 +1,33 @@
 import { Button, Column, Host, Text as NativeText, TextInput } from '@expo/ui';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuthStore } from '@/stores/auth-store';
 import { theme } from '@/theme';
 
 export default function LoginScreen() {
+  const lock = useRef(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [email, setEmail] = useState('');
   const [buttonWidth, setButtonWidth] = useState(0);
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const signIn = useAuthStore((state) => state.signIn);
 
-  function handleSubmit() {
+  async function handleSubmit() {
+    if (lock.current) return;
+    lock.current = true;
+    setIsSubmitting(true);
     setError(null);
     try {
-      signIn(email, password);
+      await signIn(email, password);
       Keyboard.dismiss();
       // Stack.Protected cambia al grupo de pestañas al actualizarse la sesión.
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No se pudo iniciar sesión.');
+    } finally {
+      lock.current = false;
+      setIsSubmitting(false);
     }
   }
 
@@ -32,11 +40,11 @@ export default function LoginScreen() {
           <Text style={styles.intro}>Ingresá para encontrar tu próxima clase y gestionar tus reservas.</Text>
           <Host matchContents colorScheme="light">
             <Column spacing={16} style={{ width: '100%' }}>
-              <TextInput accessibilityLabel="Correo electrónico" placeholder="Correo electrónico"
+              <TextInput editable={!isSubmitting} accessibilityLabel="Correo electrónico" placeholder="Correo electrónico"
                 keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
                 autoComplete="email" maxLength={254} onChangeText={(value) => { setEmail(value); setError(null); }}
                 style={{ height: 52, padding: 12 }} />
-              <TextInput accessibilityLabel="Contraseña" placeholder="Contraseña" secureTextEntry
+              <TextInput editable={!isSubmitting} accessibilityLabel="Contraseña" placeholder="Contraseña" secureTextEntry
                 autoCapitalize="none" autoCorrect={false} autoComplete="current-password"
                 maxLength={128} returnKeyType="go" onSubmitEditing={handleSubmit}
                 onChangeText={(value) => { setPassword(value); setError(null); }}
@@ -45,7 +53,7 @@ export default function LoginScreen() {
           </Host>
           <View style={styles.buttonContainer} onLayout={({ nativeEvent }) => setButtonWidth(nativeEvent.layout.width)}>
             <Host colorScheme="light" seedColor={theme.colors.buttonBackground} style={{ width: buttonWidth, height: 52 }}>
-              <Button variant="text" style={{ ...styles.button, width: buttonWidth }} onPress={handleSubmit}>
+              <Button disabled={isSubmitting} variant="text" style={{ ...styles.button, width: buttonWidth }} onPress={handleSubmit}>
                 <NativeText textStyle={{ color: '#ffffff', fontSize: 17, fontWeight: '600' }}>Ingresar</NativeText>
               </Button>
             </Host>

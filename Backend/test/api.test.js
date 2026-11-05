@@ -59,7 +59,7 @@ test('rechaza acceso sin token y tokens inválidos o vencidos', async () => {
 });
 test('valida perfil e impide modificar campos privados', async () => {
   const { body: { token } } = await login();
-  for (const body of [{}, { firstName: ' ' }, { phone: 'abc' }, { passwordHash: 'x' }, { id: 'other' }, { email: 'a@b.com' }]) {
+  for (const body of [{}, { firstName: ' ' }, { phone: 'abc' }, { passwordHash: 'x' }, { id: 'other' }, { email: 'invalid' }, { email: '' }, { lastName: ' ' }, { firstName: 42 }, { roles: ['admin'] }, { phone: '+541112345678' }]) {
     assert.equal((await request('/api/users/me', 'PATCH', body, token)).status, 400);
   }
 });
@@ -152,4 +152,46 @@ test('Swagger UI y especificación OpenAPI disponibles', async () => {
     const result = await fetch(`${base}/api-docs/${asset}`);
     assert.equal(result.status, 200);
   }
+});
+
+
+test('PATCH exige JWT y rechaza cuerpos inválidos sin modificar el perfil', async () => {
+  const { body: { token } } = await login();
+  const before = (await request('/api/users/me', 'GET', undefined, token)).body.data;
+  for (const jwt of [undefined, 'invalid']) assert.equal((await request('/api/users/me', 'PATCH', { firstName: 'Otro' }, jwt)).status, 401);
+  for (const body of [null, [], {}, { email: null }, { lastName: 'x'.repeat(81) }, { email: 'x'.repeat(255) + '@a.com' }, { firstName: 'Otro', role: 'admin' }]) {
+    assert.equal((await request('/api/users/me', 'PATCH', body, token)).status, 400);
+  }
+  assert.deepEqual((await request('/api/users/me', 'GET', undefined, token)).body.data, before);
+});
+
+test('PATCH persiste nombre, apellido y correo normalizados; mantiene JWT y cambia el acceso por email', async () => {
+  const { body: { token } } = await login();
+  const result = await request('/api/users/me', 'PATCH', { firstName: '  Ana  ', lastName: '  Pérez  ', email: ' ANA@EXAMPLE.COM ' }, token);
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data, { id: 'user-demo', firstName: 'Ana', lastName: 'Pérez', email: 'ana@example.com', phone: '' });
+  const { createUserRepository } = require('../src/repositories/users');
+  const persisted = createUserRepository(process.env.DATA_FILE).findById('user-demo');
+  assert.equal(persisted.email, 'ana@example.com');
+  assert.ok(persisted.passwordHash);
+  assert.equal((await request('/api/users/me', 'GET', undefined, token)).body.data.email, 'ana@example.com');
+  assert.equal((await login()).status, 401);
+  assert.equal((await request('/api/auth/login', 'POST', { email: 'ana@example.com', password: 'SportClub123!' })).status, 200);
+  await request('/api/users/me', 'PATCH', { email: 'demo@sportclub.com' }, token);
+});
+
+test('PATCH impide correos duplicados sin escritura parcial ni exposición de campos sensibles', async () => {
+  const data = JSON.parse(fs.readFileSync(process.env.DATA_FILE, 'utf8'));
+  data.push({ ...data[0], id: 'second-user', email: 'OTHER@example.com', role: 'admin' });
+  fs.writeFileSync(process.env.DATA_FILE, JSON.stringify(data));
+  const { body: { token } } = await login();
+  const before = fs.readFileSync(process.env.DATA_FILE, 'utf8');
+  const conflict = await request('/api/users/me', 'PATCH', { firstName: 'No guardar', email: ' OTHER@example.com ' }, token);
+  assert.equal(conflict.status, 409);
+  assert.equal(conflict.body.error.code, 'EMAIL_IN_USE');
+  assert.equal(fs.readFileSync(process.env.DATA_FILE, 'utf8'), before);
+  const { publicUser } = require('../src/repositories/users');
+  assert.equal(publicUser(data[1]).role, undefined);
+  assert.equal(publicUser(data[1]).passwordHash, undefined);
+  assert.equal((await request('/api/users/me', 'PATCH', { email: ' DEMO@sportclub.com ' }, token)).status, 200);
 });

@@ -69,16 +69,17 @@ function createRouter(users) {
   router.get('/users/me', (req, res) => res.json({ data: publicUser(req.user) }));
   router.patch('/users/me', (req, res, next) => {
     const body = req.body;
-    const fields = ['firstName', 'lastName', 'phone'];
+    const fields = ['firstName', 'lastName', 'email'];
     if (!isObject(body) || !Object.keys(body).length || Object.keys(body).some(key => !fields.includes(key))) {
-      return next(fail(400, 'VALIDATION_ERROR', 'Campos permitidos: firstName, lastName y phone.'));
+      return next(fail(400, 'VALIDATION_ERROR', 'Campos permitidos: firstName, lastName y email.'));
     }
     const changes = {};
     for (const [key, value] of Object.entries(body)) {
-      if (key === 'phone' ? !validPhone(value) : !validName(value)) {
+      if (typeof value !== 'string' || (key !== 'email' && (!value.trim() || value.trim().length > 80)) ||
+          (key === 'email' && !validEmail(value.trim()))) {
         return next(fail(400, 'VALIDATION_ERROR', `El campo ${key} es inválido.`));
       }
-      changes[key] = value.trim();
+      changes[key] = key === 'email' ? value.trim().toLowerCase() : value.trim();
     }
     res.json({ data: publicUser(users.update(req.user.id, changes)) });
   });

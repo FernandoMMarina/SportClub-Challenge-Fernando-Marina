@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { hashPassword } = require('../utils/password');
+const { fail } = require('../utils/errors');
 
 // Escrituras síncronas y atómicas: suficiente para un único proceso del challenge.
 function createUserRepository(file) {
@@ -22,7 +23,7 @@ function createUserRepository(file) {
     passwordHash: hashPassword('SportClub123!'),
   }]);
   return {
-    findByEmail: email => read().find(user => user.email === email),
+    findByEmail: email => read().find(user => user.email.toLowerCase() === email.toLowerCase()),
     findById: id => read().find(user => user.id === id),
     /**
      * Alta de usuario. Leer, comprobar el email y escribir ocurre sin await,
@@ -42,11 +43,16 @@ function createUserRepository(file) {
       const users = read();
       const user = users.find(item => item.id === id);
       if (!user) return undefined;
+      if (changes.email && users.some(item => item.id !== id && item.email.toLowerCase() === changes.email.toLowerCase())) {
+        throw fail(409, 'EMAIL_IN_USE', 'Ese correo electrónico ya pertenece a otro usuario.');
+      }
       Object.assign(user, changes);
       save(users);
       return user;
     },
   };
 }
-function publicUser({ passwordHash, ...user }) { return user; }
+function publicUser({ id, firstName, lastName, email, phone }) {
+  return { id, firstName, lastName, email, phone };
+}
 module.exports = { createUserRepository, publicUser };

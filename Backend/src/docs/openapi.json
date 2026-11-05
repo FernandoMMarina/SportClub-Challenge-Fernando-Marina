@@ -479,7 +479,7 @@
         ],
         "operationId": "updateProfile",
         "summary": "Actualizar el perfil autenticado",
-        "description": "Enviar al menos un campo. No permite editar email, contraseña ni identificador. Los cambios persisten en JSON.",
+        "description": "Actualiza únicamente firstName, lastName y email del usuario identificado por el JWT. Persiste en JSON y rechaza correos duplicados.",
         "security": [
           {
             "bearerAuth": []
@@ -494,7 +494,8 @@
               },
               "example": {
                 "firstName": "Fernando",
-                "phone": "+54 11 1234 5678"
+                "lastName": "Marina",
+                "email": "fernando@example.com"
               }
             }
           }
@@ -520,39 +521,16 @@
             }
           },
           "400": {
-            "description": "Datos inválidos o JSON mal formado.",
+            "description": "Cuerpo vacío, campos desconocidos, nombre/apellido inválido o correo inválido.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 },
-                "examples": {
-                  "campoNoPermitido": {
-                    "summary": "El cuerpo incluye una clave distinta de firstName, lastName o phone",
-                    "value": {
-                      "error": {
-                        "code": "VALIDATION_ERROR",
-                        "message": "Campos permitidos: firstName, lastName y phone."
-                      }
-                    }
-                  },
-                  "valorInvalido": {
-                    "summary": "Nombre vacío, de más de 80 caracteres o teléfono con formato inválido",
-                    "value": {
-                      "error": {
-                        "code": "VALIDATION_ERROR",
-                        "message": "El campo phone es inválido."
-                      }
-                    }
-                  },
-                  "cuerpoVacio": {
-                    "summary": "Objeto sin propiedades",
-                    "value": {
-                      "error": {
-                        "code": "VALIDATION_ERROR",
-                        "message": "Campos permitidos: firstName, lastName y phone."
-                      }
-                    }
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Campos permitidos: firstName, lastName y email."
                   }
                 }
               }
@@ -628,6 +606,9 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "El correo ya pertenece a otro usuario."
           }
         }
       }
@@ -1908,10 +1889,11 @@
             "maxLength": 80,
             "description": "Se recortan espacios; no puede quedar vacío."
           },
-          "phone": {
+          "email": {
             "type": "string",
-            "pattern": "^$|^\\+?[0-9 ()-]{6,25}$",
-            "description": "Vacío para borrar; admite números, espacios, paréntesis, guiones y + inicial."
+            "format": "email",
+            "maxLength": 254,
+            "description": "Se recortan espacios y se normaliza a minúsculas. Debe ser único."
           }
         },
         "minProperties": 1,
