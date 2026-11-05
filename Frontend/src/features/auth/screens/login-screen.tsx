@@ -2,8 +2,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { Button, Column, Host, Text as NativeText, TextInput, type TextInputRef } from '@expo/ui';
 import * as Clipboard from 'expo-clipboard';
 import { useRef, useState } from 'react';
-import { AccessibilityInfo, Alert, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-
+import { AccessibilityInfo, Alert, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View , Image } from 'react-native';
 import { useAuthStore } from '@/stores/auth-store';
 import { theme } from '@/theme';
 import { AuthError, DEMO_CREDENTIALS, describeLoginError, type LoginFieldErrors } from '@/services/auth-service';
@@ -88,8 +87,11 @@ export default function LoginScreen() {
       <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
-          <Text style={styles.brand}>SPORTCLUB</Text>
-          <Text style={styles.intro}>Ingresá para encontrar tu próxima clase y gestionar tus reservas.</Text>
+          <View style={{flex: 1, gap: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24,backgroundColor: '#f3f4f6', borderRadius: 12, paddingVertical: 24}}>
+            <Image source={require('@/assets/images/Logo SportClub Rojo y Negro.png')} style={{ width: 300, height: 100, alignSelf: 'center' }} resizeMode="contain" />
+            <Text style={styles.intro}>Ingresá para encontrar tu próxima clase y gestionar tus reservas.</Text>
+          </View>
+
           <Host matchContents colorScheme="light">
             <Column spacing={16} style={{ width: '100%' }}>
               <TextInput ref={emailRef} editable={!isSubmitting} textStyle={{ color: theme.colors.text }} placeholderTextColor="#a1a1aa"
@@ -97,7 +99,7 @@ export default function LoginScreen() {
                 keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
                 autoComplete="email" maxLength={254} returnKeyType="next" onSubmitEditing={() => passwordRef.current?.focus()}
                 onChangeText={(value) => { setEmail(value); clearFieldError('email'); }}
-                style={{ height: 52, padding: 12, backgroundColor: '#242424', borderRadius: 8 }} />
+                style={{ height: 52, padding: 12, backgroundColor: '#242424', borderRadius: 8 , width: buttonWidth, }} />
               {fieldErrors.email ? <NativeText textStyle={styles.fieldError}>{fieldErrors.email}</NativeText> : null}
             </Column>
           </Host>
@@ -171,7 +173,7 @@ const styles = StyleSheet.create({
   formError: { gap: 8, padding: 16, borderRadius: 8, backgroundColor: '#351b1b' },
   formErrorTitle: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
   demo: { gap: 6, padding: 16, backgroundColor: '#f3f4f6', borderRadius: 12 },
-  demoTitle: { fontWeight: '600', color: '#151515', fontSize: 15 },
+  demoTitle: { fontWeight: '600', color: '#151515', fontSize: 15 , alignItems: 'center', textAlign: 'center'},
   demoSuccess: { color: '#176b46', fontSize: 14, lineHeight: 20 },
   demoError: { color: '#b42318', fontSize: 14, lineHeight: 20 },
   demoText: { color: theme.colors.textSecondary, fontSize: 14, flex: 1 },
