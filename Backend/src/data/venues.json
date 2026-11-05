@@ -1,0 +1,120 @@
+[
+  {
+    "id": "palermo",
+    "name": "SportClub Palermo",
+    "address": "Av. Santa Fe 4500, CABA",
+    "location": {
+      "latitude": -34.577,
+      "longitude": -58.426
+    },
+    "description": "Sede de demostración con espacios para entrenamiento y clases grupales.",
+    "openingHours": [
+      {
+        "days": [
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday"
+        ],
+        "opens": "07:00",
+        "closes": "22:00"
+      },
+      {
+        "days": [
+          "saturday"
+        ],
+        "opens": "09:00",
+        "closes": "18:00"
+      }
+    ],
+    "classes": [
+      {
+        "id": "palermo-1",
+        "name": "Yoga",
+        "description": "Clase grupal de yoga guiada por un instructor.",
+        "days": [
+          "monday",
+          "wednesday",
+          "friday"
+        ],
+        "times": [
+          "09:00",
+          "18:00"
+        ]
+      },
+      {
+        "id": "palermo-2",
+        "name": "Spinning",
+        "description": "Clase grupal de spinning guiada por un instructor.",
+        "days": [
+          "tuesday",
+          "thursday"
+        ],
+        "times": [
+          "10:00",
+          "19:00"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "belgrano",
+    "name": "SportClub Belgrano",
+    "address": "Av. Cabildo 2000, CABA",
+    "location": {
+      "latitude": -34.562,
+      "longitude": -58.456
+    },
+    "description": "Sede de demostración con espacios para entrenamiento y clases grupales.",
+    "openingHours": [
+      {
+        "days": [
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday"
+        ],
+        "opens": "07:00",
+        "closes": "22:00"
+      },
+      {
+        "days": [
+          "saturday"
+        ],
+        "opens": "09:00",
+        "closes": "18:00"
+      }
+    ],
+    "classes": [
+      {
+        "id": "belgrano-1",
+        "name": "Funcional",
+        "description": "Clase grupal de funcional guiada por un instructor.",
+        "days": [
+          "monday",
+          "wednesday",
+          "friday"
+        ],
+        "times": [
+          "09:00",
+          "18:00"
+        ]
+      },
+      {
+        "id": "belgrano-2",
+        "name": "Pilates",
+        "description": "Clase grupal de pilates guiada por un instructor.",
+        "days": [
+          "tuesday",
+          "thursday"
+        ],
+        "times": [
+          "10:00",
+          "19:00"
+        ]
+      }
+    ]
+  }
+]

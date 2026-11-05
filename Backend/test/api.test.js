@@ -7,6 +7,7 @@ process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-that-is-at-least-32-bytes-long';
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'sportclub-'));
 process.env.DATA_FILE = path.join(directory, 'users.json');
+process.env.RESERVATIONS_FILE = path.join(directory, 'reservations.json');
 const app = require('../app');
 const jwt = require('jsonwebtoken');
 let server, base;
@@ -86,6 +87,7 @@ test('Swagger UI y especificación OpenAPI disponibles', async () => {
   assert.equal(spec.body.openapi, '3.0.3');
   assert.deepEqual(Object.keys(spec.body.paths).sort(), [
     '/health', '/api/auth/login', '/api/users/me', '/api/venues', '/api/venues/{id}',
+    '/api/sessions', '/api/sessions/{id}', '/api/reservations', '/api/reservations/me', '/api/reservations/{id}/cancel',
   ].sort());
   assert.deepEqual(spec.body.paths['/api/users/me'].patch.security, [{ bearerAuth: [] }]);
   assert.equal(spec.body.paths['/api/auth/login'].post.security, undefined);

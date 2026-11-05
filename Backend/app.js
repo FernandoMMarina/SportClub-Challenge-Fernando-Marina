@@ -7,6 +7,9 @@ const swaggerUi = require('swagger-ui-express');
 const openapi = require('./src/docs/openapi.json');
 const { createUserRepository } = require('./src/repositories/users');
 const { createRouter } = require('./src/routes');
+const { createReservationRepository } = require('./src/repositories/reservations');
+const { createReservationService } = require('./src/services/reservations');
+const { createReservationRouter } = require('./src/routes/reservations');
 
 function createApp(options = {}) {
   const app = express();
@@ -24,7 +27,10 @@ function createApp(options = {}) {
     standardHeaders: 'draft-7', legacyHeaders: false,
     message: { error: { code: 'TOO_MANY_REQUESTS', message: 'Demasiados intentos. Intentá más tarde.' } } });
   app.use('/api/auth/login', loginLimiter);
-  app.use('/api', createRouter(options.users || createUserRepository(config.dataFile)));
+  const users = options.users || createUserRepository(config.dataFile);
+  const reservations = options.reservations || createReservationRepository(config.reservationFile);
+  app.use('/api', createRouter(users));
+  app.use('/api', createReservationRouter(users, createReservationService(reservations, users, options.clock)));
   app.use((req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ruta no encontrada.' } }));
   app.use((err, req, res, next) => {
     const status = err.status || 500;

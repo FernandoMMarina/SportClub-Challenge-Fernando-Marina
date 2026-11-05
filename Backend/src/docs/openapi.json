@@ -23,6 +23,12 @@
     },
     {
       "name": "Sedes"
+    },
+    {
+      "name": "Sesiones"
+    },
+    {
+      "name": "Reservas"
     }
   ],
   "paths": {
@@ -609,6 +615,515 @@
           }
         }
       }
+    },
+    "/api/sessions": {
+      "get": {
+        "tags": [
+          "Sesiones"
+        ],
+        "operationId": "listSessions",
+        "summary": "Consultar próximas sesiones y cupos",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sesiones futuras, incluyendo las completas para mostrar su disponibilidad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identificadores, filtros o cuerpo inválidos. No se acepta userId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Enviar únicamente sessionId como identificador válido."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT ausente, inválido, vencido o usuario inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Usuario no autorizado."
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falla de lectura o escritura; la reserva no se confirma.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": "Ocurrió un error interno."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "branchId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtrar por sede."
+          },
+          {
+            "name": "activityId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtrar por actividad."
+          }
+        ],
+        "description": "Filtros opcionales. Una sesión llena devuelve remainingCapacity=0 y bookable=false. IDs de filtro desconocidos devuelven una lista vacía."
+      }
+    },
+    "/api/sessions/{id}": {
+      "get": {
+        "tags": [
+          "Sesiones"
+        ],
+        "operationId": "getSession",
+        "summary": "Consultar una sesión y sus cupos",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Incluye sesiones pasadas con bookable=false.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Sesión inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SESSION_NOT_FOUND",
+                    "message": "Sesión no encontrada."
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identificadores, filtros o cuerpo inválidos. No se acepta userId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Enviar únicamente sessionId como identificador válido."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT ausente, inválido, vencido o usuario inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Usuario no autorizado."
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falla de lectura o escritura; la reserva no se confirma.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": "Ocurrió un error interno."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Identificador devuelto por la API."
+          }
+        ]
+      }
+    },
+    "/api/reservations": {
+      "post": {
+        "tags": [
+          "Reservas"
+        ],
+        "operationId": "createReservation",
+        "summary": "Confirmar una reserva",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Reserva confirmada y cupos actualizados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Sesión inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SESSION_NOT_FOUND",
+                    "message": "Sesión no encontrada."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: DUPLICATE_RESERVATION, SESSION_FULL, SCHEDULE_CONFLICT o SESSION_STARTED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SESSION_FULL",
+                    "message": "La sesión no tiene cupos disponibles."
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identificadores, filtros o cuerpo inválidos. No se acepta userId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Enviar únicamente sessionId como identificador válido."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT ausente, inválido, vencido o usuario inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Usuario no autorizado."
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falla de lectura o escritura; la reserva no se confirma.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": "Ocurrió un error interno."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReservation"
+              },
+              "example": {
+                "sessionId": "palermo-1-2030-01-07-0900"
+              }
+            }
+          }
+        },
+        "description": "Usar un sessionId obtenido de GET /api/sessions. Solo reservas CONFIRMED ocupan cupos o bloquean horarios. No se permite superposición para el mismo usuario, incluso entre sedes. Intervalos consecutivos permitidos."
+      }
+    },
+    "/api/reservations/me": {
+      "get": {
+        "tags": [
+          "Reservas"
+        ],
+        "operationId": "listMyReservations",
+        "summary": "Consultar mis reservas",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Incluye confirmadas y canceladas, con la sesión y sus cupos actuales.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identificadores, filtros o cuerpo inválidos. No se acepta userId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Enviar únicamente sessionId como identificador válido."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT ausente, inválido, vencido o usuario inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Usuario no autorizado."
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falla de lectura o escritura; la reserva no se confirma.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": "Ocurrió un error interno."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "No admite userId ni otros filtros. Solo devuelve las reservas del usuario autenticado, ordenadas por inicio de sesión."
+      }
+    },
+    "/api/reservations/{id}/cancel": {
+      "patch": {
+        "tags": [
+          "Reservas"
+        ],
+        "operationId": "cancelReservation",
+        "summary": "Cancelar mi reserva",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelada; repetir la operación es idempotente y no cambia cancelledAt.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe o no pertenece al usuario autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RESERVATION_NOT_FOUND",
+                    "message": "Reserva no encontrada."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No se permite cancelar reservas confirmadas cuya sesión ya comenzó.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SESSION_STARTED",
+                    "message": "No se puede cancelar una sesión que ya comenzó."
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identificadores, filtros o cuerpo inválidos. No se acepta userId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Enviar únicamente sessionId como identificador válido."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT ausente, inválido, vencido o usuario inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Usuario no autorizado."
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Falla de lectura o escritura; la reserva no se confirma.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": "Ocurrió un error interno."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Identificador devuelto por la API."
+          }
+        ],
+        "description": "Sin cuerpo o con objeto vacío. Libera el cupo inmediatamente. Una reserva cancelada permanece en el historial; volver a reservar crea otra reserva."
+      }
     }
   },
   "components": {
@@ -919,6 +1434,168 @@
         "required": [
           "data"
         ]
+      },
+      "SessionAvailability": {
+        "type": "object",
+        "required": [
+          "id",
+          "branchId",
+          "activityId",
+          "startsAt",
+          "endsAt",
+          "capacity",
+          "confirmedCount",
+          "remainingCapacity",
+          "bookable"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "description": "ID de sede existente (venues.json)."
+          },
+          "activityId": {
+            "type": "string",
+            "description": "ID de clase existente dentro de la sede."
+          },
+          "startsAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Timestamp Unix en milisegundos UTC; inicio inclusivo."
+          },
+          "endsAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Timestamp Unix en milisegundos UTC; fin exclusivo."
+          },
+          "capacity": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "confirmedCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "remainingCapacity": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bookable": {
+            "type": "boolean",
+            "description": "Todavía no comenzó y tiene cupos. No evalúa duplicados ni conflictos del usuario."
+          }
+        }
+      },
+      "Reservation": {
+        "type": "object",
+        "required": [
+          "id",
+          "userId",
+          "sessionId",
+          "status",
+          "createdAt",
+          "cancelledAt",
+          "session"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "description": "Identidad del JWT, nunca provista por el cliente."
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CONFIRMED",
+              "CANCELLED"
+            ]
+          },
+          "createdAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Timestamp Unix en milisegundos UTC."
+          },
+          "cancelledAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Timestamp de cancelación; null mientras está confirmada.",
+            "nullable": true
+          },
+          "session": {
+            "$ref": "#/components/schemas/SessionAvailability"
+          }
+        }
+      },
+      "SessionResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SessionAvailability"
+          }
+        }
+      },
+      "SessionsResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionAvailability"
+            }
+          }
+        }
+      },
+      "ReservationResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Reservation"
+          }
+        }
+      },
+      "ReservationsResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Reservation"
+            }
+          }
+        }
+      },
+      "CreateReservation": {
+        "type": "object",
+        "required": [
+          "sessionId"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,127}$"
+          }
+        },
+        "additionalProperties": false
       }
     }
   }
