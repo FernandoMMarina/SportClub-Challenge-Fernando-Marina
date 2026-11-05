@@ -123,7 +123,7 @@ El cliente Axios tiene timeout de 10 segundos y no reintenta automáticamente el
 La cuenta demo permite ingresar sin servidor ni conexión, sin configuración adicional y sin JWT ficticio. Cualquier otra combinación de credenciales requiere la API; un fallo de red no concede acceso local.
 
 
-Esta integración cubre autenticación y consulta del perfil. Sedes, clases y QR siguen usando sus datos locales; el flujo de reservas del frontend todavía debe implementarse.
+La autenticación y el perfil se integran con la API. El flujo de reservas usa Zustand, con funcionamiento local para demo y servicios HTTP para cuentas API; ver Reservas compartidas con Zustand.
 
 ### Pruebas
 
@@ -151,3 +151,12 @@ Perfil → Editar información personal permite cambiar nombre, apellido y corre
 La cuenta demo local no tiene JWT y muestra un aviso con el guardado deshabilitado. Para probar persistencia real, ingresar con una cuenta del backend (distinta de la combinación demo local). No se simulan actualizaciones. En Android configurar `EXPO_PUBLIC_API_URL` con una dirección accesible desde el dispositivo; por ejemplo `http://10.0.2.2:3000/api` para el emulador estándar, o la IP LAN del equipo para un dispositivo físico.
 
 Verificaciones: `npm run test:auth`, `npm run typecheck`, `npm run lint` en Frontend; `npm test` en Backend. Prueba manual Android: ingresar con JWT, editar cada campo, guardar y comprobar Perfil; repetir ingreso usando el nuevo correo; probar cancelar, correo duplicado, error de red, botón Atrás y cerrar sesión. La sesión permanece en memoria, como antes.
+
+
+## Reservas compartidas con Zustand
+
+`useReservationsStore` centraliza sesiones, reservas, carga, errores y operaciones pendientes. Sedes permite reservar un horario; Home muestra las reservas confirmadas que no finalizaron; Perfil → Mis reservas incluye el historial y permite cancelar. Todas las pantallas observan el mismo estado.
+
+La cuenta demo carga ejemplos una sola vez por sesión y permite crear/cancelar reservas locales sin HTTP. Los horarios se generan para los próximos 14 días con el catálogo local (Buenos Aires); la validación rechaza duplicados, clases comenzadas y solapamientos usando `inicioA < finB && inicioB < finA`. Las clases consecutivas se permiten. El estado es en memoria: se limpia al salir o reiniciar, igual que la autenticación; los ejemplos se inicializan al volver a entrar.
+
+Con una sesión API, el store consulta sesiones y reservas, y solo publica altas/cancelaciones confirmadas por el backend, que sigue siendo la autoridad para cupos y conflictos. Las respuestas tardías después de cerrar sesión se descartan. No se usan datos demo como reemplazo ante errores del servidor. No se requiere instalar dependencias nuevas.

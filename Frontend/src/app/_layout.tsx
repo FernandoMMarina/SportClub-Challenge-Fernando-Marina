@@ -29,6 +29,7 @@ export default function RootLayout() {
       </Stack.Protected>
       <Stack.Protected guard={isAuthenticated}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="my-reservations" options={{ headerShown: false }} />
         <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
         <Stack.Screen name="scan-qr" options={{ presentation: 'fullScreenModal', headerShown: false }} />
       </Stack.Protected>
