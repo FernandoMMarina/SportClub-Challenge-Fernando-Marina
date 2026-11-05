@@ -81,12 +81,66 @@ test('sedes, detalle y errores JSON', async () => {
   assert.equal(malformed.status, 400);
   assert.ok((await malformed.json()).error.message);
 });
+test('registro: crea la cuenta, devuelve sesión y normaliza los datos', async () => {
+  const alta = await request('/api/auth/register', 'POST', {
+    firstName: '  Fernando ', lastName: 'Marina', email: 'NUEVO@SportClub.com',
+    password: 'UnaClaveSegura1', phone: '+54 11 5555 5555',
+  });
+  assert.equal(alta.status, 201);
+  assert.equal(alta.body.tokenType, 'Bearer');
+  assert.equal(alta.body.user.email, 'nuevo@sportclub.com');
+  assert.equal(alta.body.user.firstName, 'Fernando');
+  assert.equal(alta.body.user.passwordHash, undefined);
+  assert.notEqual(alta.body.user.id, 'user-demo');
+  // El token recién emitido ya sirve para los endpoints protegidos.
+  const perfil = await request('/api/users/me', 'GET', undefined, alta.body.token);
+  assert.equal(perfil.status, 200);
+  assert.equal(perfil.body.data.id, alta.body.user.id);
+  // Y la cuenta queda utilizable desde login, con la contraseña nunca guardada en claro.
+  const sesion = await request('/api/auth/login', 'POST',
+    { email: 'nuevo@sportclub.com', password: 'UnaClaveSegura1' });
+  assert.equal(sesion.status, 200);
+  assert.equal(sesion.body.user.id, alta.body.user.id);
+  assert.ok(!fs.readFileSync(process.env.DATA_FILE, 'utf8').includes('UnaClaveSegura1'));
+  // Mismo criterio que login: el email no admite espacios alrededor.
+  assert.equal((await request('/api/auth/register', 'POST',
+    { firstName: 'Con', lastName: 'Espacios', email: ' otro@sportclub.com ', password: 'ClaveLarga1' })).status, 400);
+});
+test('registro: rechaza email repetido sin pisar la cuenta existente', async () => {
+  const repetido = await request('/api/auth/register', 'POST', {
+    firstName: 'Otro', lastName: 'Usuario', email: 'DEMO@sportclub.com', password: 'OtraClave123',
+  });
+  assert.equal(repetido.status, 409);
+  assert.equal(repetido.body.error.code, 'EMAIL_TAKEN');
+  const demo = await login();
+  assert.equal(demo.status, 200);
+  assert.equal(demo.body.user.id, 'user-demo');
+});
+test('registro: valida el cuerpo y no acepta campos privados', async () => {
+  const valido = { firstName: 'Ana', lastName: 'Pérez', email: 'ana@sportclub.com', password: 'ClaveLarga1' };
+  const invalidos = [
+    null,
+    {},
+    { ...valido, password: 'corta' },
+    { ...valido, email: 'sin-arroba' },
+    { ...valido, firstName: '   ' },
+    { ...valido, phone: 'abc' },
+    { ...valido, id: 'elegido-por-el-cliente' },
+    { ...valido, passwordHash: 'x' },
+  ];
+  for (const body of invalidos) {
+    const resultado = await request('/api/auth/register', 'POST', body);
+    assert.equal(resultado.status, 400, `esperaba 400 para ${JSON.stringify(body)}`);
+  }
+  assert.equal((await request('/api/auth/login', 'POST',
+    { email: 'ana@sportclub.com', password: 'ClaveLarga1' })).status, 401);
+});
 test('Swagger UI y especificación OpenAPI disponibles', async () => {
   const spec = await request('/api-docs.json');
   assert.equal(spec.status, 200);
   assert.equal(spec.body.openapi, '3.0.3');
   assert.deepEqual(Object.keys(spec.body.paths).sort(), [
-    '/health', '/api/auth/login', '/api/users/me', '/api/venues', '/api/venues/{id}',
+    '/health', '/api/auth/login', '/api/auth/register', '/api/users/me', '/api/venues', '/api/venues/{id}',
     '/api/sessions', '/api/sessions/{id}', '/api/reservations', '/api/reservations/me', '/api/reservations/{id}/cancel',
   ].sort());
   assert.deepEqual(spec.body.paths['/api/users/me'].patch.security, [{ bearerAuth: [] }]);

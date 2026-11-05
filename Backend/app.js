@@ -23,10 +23,12 @@ function createApp(options = {}) {
     customSiteTitle: 'SportClub API — Swagger UI',
   }));
   app.get('/health', (req, res) => res.json({ status: 'ok' }));
-  const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20,
+  // Endpoints públicos que escriben o verifican credenciales: un límite por IP cada uno.
+  const authLimiter = limit => rateLimit({ windowMs: 15 * 60 * 1000, limit,
     standardHeaders: 'draft-7', legacyHeaders: false,
     message: { error: { code: 'TOO_MANY_REQUESTS', message: 'Demasiados intentos. Intentá más tarde.' } } });
-  app.use('/api/auth/login', loginLimiter);
+  app.use('/api/auth/login', authLimiter(20));
+  app.use('/api/auth/register', authLimiter(20));
   const users = options.users || createUserRepository(config.dataFile);
   const reservations = options.reservations || createReservationRepository(config.reservationFile);
   app.use('/api', createRouter(users));

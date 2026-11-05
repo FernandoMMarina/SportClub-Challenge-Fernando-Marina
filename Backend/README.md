@@ -22,6 +22,7 @@ Usuario de prueba: `demo@sportclub.com` / `SportClub123!`.
 | --- | --- | --- | --- |
 | GET | `/health` | Público | Estado del servidor |
 | POST | `/api/auth/login` | Público | Email y contraseña; devuelve JWT y usuario |
+| POST | `/api/auth/register` | Público | Crea la cuenta y devuelve la sesión iniciada |
 | GET | `/api/users/me` | Bearer JWT | Perfil autenticado |
 | PATCH | `/api/users/me` | Bearer JWT | Modifica firstName, lastName y phone |
 | GET | `/api/venues` | Público | Dos sedes, con dos clases cada una |
@@ -30,6 +31,10 @@ Usuario de prueba: `demo@sportclub.com` / `SportClub123!`.
 Las rutas de sesiones y reservas se documentan en [Endpoints de reservas](#endpoints-de-reservas).
 
 ```sh
+curl -X POST http://localhost:3000/api/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"firstName":"Fernando","lastName":"Marina","email":"fernando@sportclub.com","password":"UnaClaveSegura1"}'
+
 curl -X POST http://localhost:3000/api/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"demo@sportclub.com","password":"SportClub123!"}'
@@ -43,7 +48,7 @@ curl -X PATCH http://localhost:3000/api/users/me \
   -d '{"firstName":"Fernando","phone":"+54 11 1234 5678"}'
 ```
 
-Login responde `{ token, tokenType, expiresIn, user }`. Las consultas y actualizaciones responden `{ data }`. Los errores usan `{ error: { code, message } }`: 400 para datos inválidos, 401 para credenciales o token inválidos, 404 para recursos inexistentes y 429 para exceso de intentos de login (20 cada 15 minutos por IP).
+Login y registro responden `{ token, tokenType, expiresIn, user }`; el registro con 201. Las consultas y actualizaciones responden `{ data }`. Los errores usan `{ error: { code, message } }`: 400 para datos inválidos, 401 para credenciales o token inválidos, 404 para recursos inexistentes, 409 para conflictos como un email ya registrado y 429 para exceso de intentos de login o registro (20 cada 15 minutos por IP).
 
 ## Estructura y decisiones
 
@@ -57,7 +62,7 @@ Login responde `{ token, tokenType, expiresIn, user }`. Las consultas y actualiz
 
 El archivo `data/users.json` se crea al iniciar por primera vez; las actualizaciones sobreviven a reinicios. Se excluye de Git. Para restablecer el usuario de prueba, detené el servidor y eliminá ese archivo. La persistencia está pensada para un único proceso local; para varias instancias conviene reemplazar el repositorio por una base de datos.
 
-El token dura una hora. El cliente cierra sesión descartándolo; esta base no implementa revocación ni refresh tokens. Solo se editan nombre, apellido y teléfono; email, contraseña e identificador no se pueden cambiar por el endpoint de perfil. No se incluye registro. Se amplió el backend con sesiones y reservas para demostrar reglas de negocio y control de capacidad; el frontend mantiene su funcionamiento local independiente.
+El token dura una hora. El cliente cierra sesión descartándolo; esta base no implementa revocación ni refresh tokens. Solo se editan nombre, apellido y teléfono; email, contraseña e identificador no se pueden cambiar por el endpoint de perfil. El registro crea la cuenta y devuelve la sesión ya iniciada, con la misma forma que login, para que la app no tenga que pedir la contraseña dos veces; el email es único y la contraseña pide al menos 8 caracteres. Tanto login como registro admiten 20 solicitudes cada 15 minutos por IP. No hay cambio de contraseña ni baja de cuenta. Se amplió el backend con sesiones y reservas para demostrar reglas de negocio y control de capacidad; el frontend mantiene su funcionamiento local independiente.
 
 Las sedes son públicas para facilitar su consulta. Se agregó el detalle por ID para la futura pantalla de sede. Los días usan nombres en inglés y las horas `HH:mm`, en horario local de Buenos Aires. Ubicaciones y direcciones son ejemplos.
 

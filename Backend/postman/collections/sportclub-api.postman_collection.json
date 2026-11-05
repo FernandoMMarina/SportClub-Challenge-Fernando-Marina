@@ -1,0 +1,1787 @@
+{
+  "info": {
+    "_postman_id": "c4a38b7f-37d1-5007-a741-06903080f787",
+    "name": "SportClub API",
+    "description": "Generada desde src/docs/openapi.json.\n\nOrden de uso: **Iniciar sesión** guarda el token en la variable de colección `token` y el resto de los requests lo usan solo. **Listar sedes** guarda `venueId` y **Listar sesiones** guarda la primera sesión con cupo en `sessionId`; **Crear una reserva** guarda `reservationId`. Corriendo la colección entera con el Runner, el flujo completo funciona de punta a punta.\n\nEl environment *SportClub — Local* define `baseUrl`, `email` y `password`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Estado",
+      "description": "Chequeo de disponibilidad del servidor.",
+      "item": [
+        {
+          "name": "Estado del servidor",
+          "id": "3ef1713b-155e-5072-b999-20d37c2a9bb3",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "No requiere autenticación. Responde 200 mientras el proceso acepta solicitudes; útil para monitoreo."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('responde JSON', () => pm.response.to.be.json);",
+                  "pm.test('status ok', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 — Servidor disponible",
+              "originalRequest": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/health",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                },
+                "description": "No requiere autenticación. Responde 200 mientras el proceso acepta solicitudes; útil para monitoreo."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"status\": \"ok\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Autenticación",
+      "description": "Login con email y contraseña; emite el JWT que usan los endpoints protegidos.",
+      "item": [
+        {
+          "name": "Iniciar sesión",
+          "id": "f472cf5f-08e2-5888-b6bf-2fea616b02ca",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Devuelve un JWT válido por una hora. Máximo 20 solicitudes cada 15 minutos por IP. El email se normaliza a minúsculas."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('responde JSON', () => pm.response.to.be.json);",
+                  "const body = pm.response.json();",
+                  "pm.test('devuelve un token Bearer', () => {",
+                  "    pm.expect(body.tokenType).to.eql('Bearer');",
+                  "    pm.expect(body.token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "// El token queda disponible para el resto de la colección.",
+                  "pm.collectionVariables.set('token', body.token);",
+                  "console.log('Token guardado; vence en', body.expiresIn, 'segundos.');"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 — Sesión iniciada",
+              "originalRequest": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "Devuelve un JWT válido por una hora. Máximo 20 solicitudes cada 15 minutos por IP. El email se normaliza a minúsculas."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTM5MDAwMjUsImV4cCI6MTc5MzkwMzYyNSwiYXVkIjoic3BvcnRjbHViLW1vYmlsZSIsImlzcyI6InNwb3J0Y2x1Yi1hcGkiLCJzdWIiOiJ1c2VyLWRlbW8ifQ.5-6N_00IdWQA0gZVcTYqjsJPaZUUwzdedgPAVZ9kBxM\",\n  \"tokenType\": \"Bearer\",\n  \"expiresIn\": 3600,\n  \"user\": {\n    \"id\": \"user-demo\",\n    \"firstName\": \"Alex\",\n    \"lastName\": \"García\",\n    \"email\": \"demo@sportclub.com\",\n    \"phone\": \"+54 11 1234 5678\"\n  }\n}"
+            },
+            {
+              "name": "400 — Email con formato inválido o contraseña vacía",
+              "originalRequest": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "Devuelve un JWT válido por una hora. Máximo 20 solicitudes cada 15 minutos por IP. El email se normaliza a minúsculas."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Ingresá un email y una contraseña válidos.\"\n  }\n}"
+            },
+            {
+              "name": "400 — El cuerpo no es JSON válido",
+              "originalRequest": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "Devuelve un JWT válido por una hora. Máximo 20 solicitudes cada 15 minutos por IP. El email se normaliza a minúsculas."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"INVALID_REQUEST\",\n    \"message\": \"Expected property name or '}' in JSON at position 1 (line 1 column 2)\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Crear cuenta",
+          "id": "7aea2251-4c4a-51c9-8f48-b35b328a89a4",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Fernando\",\n  \"lastName\": \"Marina\",\n  \"email\": \"nuevo-{{$timestamp}}@sportclub.com\",\n  \"password\": \"UnaClaveSegura1\",\n  \"phone\": \"+54 11 5555 5555\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Crea el usuario y devuelve una sesión ya iniciada, con la misma forma que login, para que la app no tenga que pedir la contraseña de nuevo. El email debe ser único y se normaliza a minúsculas; no admite espacios alrededor, igual que en login. phone es opcional y queda vacío si no se envía. La contraseña se guarda con scrypt y salt, y nunca se devuelve. Máximo 20 solicitudes cada 15 minutos por IP."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('responde JSON', () => pm.response.to.be.json);",
+                  "const body = pm.response.json();",
+                  "pm.test('crea la cuenta y abre sesión', () => {",
+                  "    pm.expect(body.tokenType).to.eql('Bearer');",
+                  "    pm.expect(body.user.email).to.be.a('string');",
+                  "});",
+                  "// El email lleva {{$timestamp}} para poder reenviarlo sin chocar con el 409.",
+                  "// No pisa {{token}} a propósito: el resto de la colección sigue con el usuario demo.",
+                  "pm.collectionVariables.set('cuentaNuevaToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "201 — Cuenta creada y sesión iniciada",
+              "originalRequest": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstName\": \"Fernando\",\n  \"lastName\": \"Marina\",\n  \"email\": \"nuevo-{{$timestamp}}@sportclub.com\",\n  \"password\": \"UnaClaveSegura1\",\n  \"phone\": \"+54 11 5555 5555\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                },
+                "description": "Crea el usuario y devuelve una sesión ya iniciada, con la misma forma que login, para que la app no tenga que pedir la contraseña de nuevo. El email debe ser único y se normaliza a minúsculas; no admite espacios alrededor, igual que en login. phone es opcional y queda vacío si no se envía. La contraseña se guarda con scrypt y salt, y nunca se devuelve. Máximo 20 solicitudes cada 15 minutos por IP."
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTM5MDAwMjUsImV4cCI6MTc5MzkwMzYyNSwiYXVkIjoic3BvcnRjbHViLW1vYmlsZSIsImlzcyI6InNwb3J0Y2x1Yi1hcGkiLCJzdWIiOiIzZjlhMmM4ZS0xYjc0LTRkMGEtOGM1MS03ZTJhOWQ0YjNmNjEifQ.Qw8Zz3r1kR0m9VvT2nJpXcL5sYbA7dEuH4gFiK6oPqM\",\n  \"tokenType\": \"Bearer\",\n  \"expiresIn\": 3600,\n  \"user\": {\n    \"id\": \"3f9a2c8e-1b74-4d0a-8c51-7e2a9d4b3f61\",\n    \"firstName\": \"Fernando\",\n    \"lastName\": \"Marina\",\n    \"email\": \"fernando@sportclub.com\",\n    \"phone\": \"+54 11 5555 5555\"\n  }\n}"
+            },
+            {
+              "name": "400 — El cuerpo incluye una clave fuera de las permitidas, como id o passwordHash",
+              "originalRequest": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstName\": \"Fernando\",\n  \"lastName\": \"Marina\",\n  \"email\": \"nuevo-{{$timestamp}}@sportclub.com\",\n  \"password\": \"UnaClaveSegura1\",\n  \"phone\": \"+54 11 5555 5555\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                },
+                "description": "Crea el usuario y devuelve una sesión ya iniciada, con la misma forma que login, para que la app no tenga que pedir la contraseña de nuevo. El email debe ser único y se normaliza a minúsculas; no admite espacios alrededor, igual que en login. phone es opcional y queda vacío si no se envía. La contraseña se guarda con scrypt y salt, y nunca se devuelve. Máximo 20 solicitudes cada 15 minutos por IP."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Campos permitidos: firstName, lastName, email, password y phone.\"\n  }\n}"
+            },
+            {
+              "name": "400 — Menos de 8 caracteres",
+              "originalRequest": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstName\": \"Fernando\",\n  \"lastName\": \"Marina\",\n  \"email\": \"nuevo-{{$timestamp}}@sportclub.com\",\n  \"password\": \"UnaClaveSegura1\",\n  \"phone\": \"+54 11 5555 5555\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                },
+                "description": "Crea el usuario y devuelve una sesión ya iniciada, con la misma forma que login, para que la app no tenga que pedir la contraseña de nuevo. El email debe ser único y se normaliza a minúsculas; no admite espacios alrededor, igual que en login. phone es opcional y queda vacío si no se envía. La contraseña se guarda con scrypt y salt, y nunca se devuelve. Máximo 20 solicitudes cada 15 minutos por IP."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"La contraseña debe tener entre 8 y 128 caracteres.\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Perfil",
+      "description": "Datos del usuario autenticado.",
+      "item": [
+        {
+          "name": "Ver mi perfil",
+          "id": "1e61c9f9-b3e6-566e-8505-d7956395da3b",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "me"
+              ]
+            },
+            "description": "Devuelve el usuario asociado al JWT. phone puede ser una cadena vacía si el perfil no lo tiene cargado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('responde JSON', () => pm.response.to.be.json);",
+                  "pm.test('trae el usuario', () => pm.expect(pm.response.json().data.id).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 — Perfil del usuario",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "me"
+                  ]
+                },
+                "description": "Devuelve el usuario asociado al JWT. phone puede ser una cadena vacía si el perfil no lo tiene cargado."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"data\": {\n    \"id\": \"user-demo\",\n    \"firstName\": \"Alex\",\n    \"lastName\": \"García\",\n    \"email\": \"demo@sportclub.com\",\n    \"phone\": \"\"\n  }\n}"
+            },
+            {
+              "name": "401 — Falta el encabezado Authorization",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "me"
+                  ]
+                },
+                "description": "Devuelve el usuario asociado al JWT. phone puede ser una cadena vacía si el perfil no lo tiene cargado."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNAUTHORIZED\",\n    \"message\": \"Se requiere un token Bearer.\"\n  }\n}"
+            },
+            {
+              "name": "401 — Token mal formado, firmado con otra clave o vencido",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "me"
+                  ]
+                },
+                "description": "Devuelve el usuario asociado al JWT. phone puede ser una cadena vacía si el perfil no lo tiene cargado."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNAUTHORIZED\",\n    \"message\": \"Token inválido o vencido.\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Actualizar mi perfil",
+          "id": "6044d3fd-4ba3-5b90-8d76-fe1ad3f2752c",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Fernando\",\n  \"phone\": \"+54 11 1234 5678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "me"
+              ]
+            },
+            "description": "Enviar al menos un campo. No permite editar email, contraseña ni identificador. Los cambios persisten en JSON."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('responde JSON', () => pm.response.to.be.json);",
+                  "pm.test('aplica el cambio', () => pm.expect(pm.response.json().data.firstName).to.eql('Fernando'));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 — Perfil actualizado",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstName\": \"Fernando\",\n  \"phone\": \"+54 11 1234 5678\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "me"
+                  ]
+                },
+                "description": "Enviar al menos un campo. No permite editar email, contraseña ni identificador. Los cambios persisten en JSON."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"data\": {\n    \"id\": \"user-demo\",\n    \"firstName\": \"Fernando\",\n    \"lastName\": \"García\",\n    \"email\": \"demo@sportclub.com\",\n    \"phone\": \"+54 11 1234 5678\"\n  }\n}"
+            },
+            {
+              "name": "400 — El cuerpo incluye una clave distinta de firstName, lastName o phone",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstName\": \"Fernando\",\n  \"phone\": \"+54 11 1234 5678\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "me"
+                  ]
+                },
+                "description": "Enviar al menos un campo. No permite editar email, contraseña ni identificador. Los cambios persisten en JSON."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Campos permitidos: firstName, lastName y phone.\"\n  }\n}"
+            },
+            {
+              "name": "400 — Nombre vacío, de más de 80 caracteres o teléfono con formato inválido",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstName\": \"Fernando\",\n  \"phone\": \"+54 11 1234 5678\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "me"
+                  ]
+                },
+                "description": "Enviar al menos un campo. No permite editar email, contraseña ni identificador. Los cambios persisten en JSON."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"El campo phone es inválido.\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sedes",
+      "description": "Catálogo público de sedes y sus clases.",
+      "item": [
+        {
+          "name": "Listar sedes",
+          "id": "502b6e0e-e937-5f2c-bbc6-a30128f72095",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/venues",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "venues"
+              ]
+            },
+            "description": "Acceso público. Sedes ficticias de demostración, con dos clases cada una."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('responde JSON', () => pm.response.to.be.json);",
+                  "const data = pm.response.json().data;",
+                  "pm.test('devuelve las dos sedes', () => pm.expect(data).to.have.lengthOf(2));",
+                  "pm.collectionVariables.set('venueId', data[0].id);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 — Listado de sedes",
+              "originalRequest": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/venues",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "venues"
+                  ]
+                },
+                "description": "Acceso público. Sedes ficticias de demostración, con dos clases cada una."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"palermo\",\n      \"name\": \"SportClub Palermo\",\n      \"address\": \"Av. Santa Fe 4500, CABA\",\n      \"location\": {\n        \"latitude\": -34.577,\n        \"longitude\": -58.426\n      },\n      \"description\": \"Sede de demostración con espacios para entrenamiento y clases grupales.\",\n      \"openingHours\": [\n        {\n          \"days\": [\n            \"monday\",\n            \"tuesday\",\n            \"wednesday\",\n            \"thursday\",\n            \"friday\"\n          ],\n          \"opens\": \"07:00\",\n          \"closes\": \"22:00\"\n        },\n        {\n          \"days\": [\n            \"saturday\"\n          ],\n          \"opens\": \"09:00\",\n          \"closes\": \"18:00\"\n        }\n      ],\n      \"classes\": [\n        {\n          \"id\": \"palermo-1\",\n          \"name\": \"Yoga\",\n          \"description\": \"Clase grupal de yoga guiada por un instructor.\",\n          \"days\": [\n            \"monday\",\n            \"wednesday\",\n            \"friday\"\n          ],\n          \"times\": [\n            \"09:00\",\n            \"18:00\"\n          ]\n        },\n        {\n          \"id\": \"palermo-2\",\n          \"name\": \"Spinning\",\n          \"description\": \"Clase grupal de spinning guiada por un instructor.\",\n          \"days\": [\n            \"tuesday\",\n            \"thursday\"\n          ],\n          \"times\": [\n            \"10:00\",\n            \"19:00\"\n          ]\n        }\n      ]\n    },\n    {\n      \"id\": \"belgrano\",\n      \"name\": \"SportClub Belgrano\",\n      \"address\": \"Av. Cabildo 2000, CABA\",\n      \"location\": {\n        \"latitude\": -34.562,\n        \"longitude\": -58.456\n      },\n      \"description\": \"Sede de demostración con espacios para entrenamiento y clases grupales.\",\n      \"openingHours\": [\n        {\n          \"days\": [\n            \"monday\",\n            \"tuesday\",\n            \"wednesday\",\n            \"thursday\",\n            \"friday\"\n          ],\n          \"opens\": \"07:00\",\n          \"closes\": \"22:00\"\n        },\n        {\n          \"days\": [\n            \"saturday\"\n          ],\n          \"opens\": \"09:00\",\n          \"closes\": \"18:00\"\n        }\n      ],\n      \"classes\": [\n        {\n          \"id\": \"belgrano-1\",\n          \"name\": \"Funcional\",\n          \"description\": \"Clase grupal de funcional guiada por un instructor.\",\n          \"days\": [\n            \"monday\",\n            \"wednesday\",\n            \"friday\"\n          ],\n          \"times\": [\n            \"09:00\",\n            \"18:00\"\n          ]\n        },\n        {\n          \"id\": \"belgrano-2\",\n          \"name\": \"Pilates\",\n          \"description\": \"Clase grupal de pilates guiada por un instructor.\",\n          \"days\": [\n            \"tuesday\",\n            \"thursday\"\n          ],\n          \"times\": [\n            \"10:00\",\n            \"19:00\"\n          ]\n        }\n      ]\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Ver una sede",
+          "id": "bb0b9e19-161e-51b7-b012-6d80c08a4978",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/venues/{{venueId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "venues",
+                "{{venueId}}"
+              ]
+            },
+            "description": "Catálogo estático. Los ids disponibles son palermo y belgrano; cualquier otro devuelve 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('responde JSON', () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 — Detalle de sede",
+              "originalRequest": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/venues/{{venueId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "venues",
+                    "{{venueId}}"
+                  ]
+                },
+                "description": "Catálogo estático. Los ids disponibles son palermo y belgrano; cualquier otro devuelve 404."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"data\": {\n    \"id\": \"palermo\",\n    \"name\": \"SportClub Palermo\",\n    \"address\": \"Av. Santa Fe 4500, CABA\",\n    \"location\": {\n      \"latitude\": -34.577,\n      \"longitude\": -58.426\n    },\n    \"description\": \"Sede de demostración con espacios para entrenamiento y clases grupales.\",\n    \"openingHours\": [\n      {\n        \"days\": [\n          \"monday\",\n          \"tuesday\",\n          \"wednesday\",\n          \"thursday\",\n          \"friday\"\n        ],\n        \"opens\": \"07:00\",\n        \"closes\": \"22:00\"\n      },\n      {\n        \"days\": [\n          \"saturday\"\n        ],\n        \"opens\": \"09:00\",\n        \"closes\": \"18:00\"\n      }\n    ],\n    \"classes\": [\n      {\n        \"id\": \"palermo-1\",\n        \"name\": \"Yoga\",\n        \"description\": \"Clase grupal de yoga guiada por un instructor.\",\n        \"days\": [\n          \"monday\",\n          \"wednesday\",\n          \"friday\"\n        ],\n        \"times\": [\n          \"09:00\",\n          \"18:00\"\n        ]\n      },\n      {\n        \"id\": \"palermo-2\",\n        \"name\": \"Spinning\",\n        \"description\": \"Clase grupal de spinning guiada por un instructor.\",\n        \"days\": [\n          \"tuesday\",\n          \"thursday\"\n        ],\n        \"times\": [\n          \"10:00\",\n          \"19:00\"\n        ]\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "404 — La sede no existe",
+              "originalRequest": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/venues/{{venueId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "venues",
+                    "{{venueId}}"
+                  ]
+                },
+                "description": "Catálogo estático. Los ids disponibles son palermo y belgrano; cualquier otro devuelve 404."
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"Sede no encontrada.\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sesiones",
+      "description": "Sesiones agendadas de cada clase, con cupos y disponibilidad.",
+      "item": [
+        {
+          "name": "Listar sesiones",
+          "id": "2b5989ac-cded-5cc9-a6ac-e797cc433e19",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "sessions"
+              ],
+              "query": [
+                {
+                  "key": "branchId",
+                  "value": "{{venueId}}",
+                  "disabled": true,
+                  "description": "Filtro opcional por sede."
+                },
+                {
+                  "key": "activityId",
+                  "value": "palermo-1",
+                  "disabled": true,
+                  "description": "Filtro opcional por clase."
+                }
+              ]
+            },
+            "description": "Devuelve solo sesiones que todavía no comenzaron, ordenadas por inicio. Filtros opcionales branchId y activityId; un id desconocido devuelve una lista vacía. Una sesión llena se incluye con remainingCapacity 0 y bookable false para que la app pueda mostrarla."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('responde JSON', () => pm.response.to.be.json);",
+                  "const data = pm.response.json().data;",
+                  "pm.test('solo sesiones futuras', () => data.forEach(s => pm.expect(s.startsAt).to.be.above(Date.now())));",
+                  "// Guarda la primera sesión con cupo para los requests de Reservas.",
+                  "const libre = data.find(s => s.bookable);",
+                  "if (libre) { pm.collectionVariables.set('sessionId', libre.id); }",
+                  "else { console.warn('No hay sesiones con cupo disponibles.'); }"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 — Sesiones futuras con sus cupos, incluyendo las completas",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/sessions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sessions"
+                  ],
+                  "query": [
+                    {
+                      "key": "branchId",
+                      "value": "{{venueId}}",
+                      "disabled": true,
+                      "description": "Filtro opcional por sede."
+                    },
+                    {
+                      "key": "activityId",
+                      "value": "palermo-1",
+                      "disabled": true,
+                      "description": "Filtro opcional por clase."
+                    }
+                  ]
+                },
+                "description": "Devuelve solo sesiones que todavía no comenzaron, ordenadas por inicio. Filtros opcionales branchId y activityId; un id desconocido devuelve una lista vacía. Una sesión llena se incluye con remainingCapacity 0 y bookable false para que la app pueda mostrarla."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"belgrano-1-2030-01-07-0900\",\n      \"branchId\": \"belgrano\",\n      \"activityId\": \"belgrano-1\",\n      \"startsAt\": 1894017600000,\n      \"endsAt\": 1894021200000,\n      \"capacity\": 20,\n      \"confirmedCount\": 20,\n      \"remainingCapacity\": 0,\n      \"bookable\": false\n    },\n    {\n      \"id\": \"palermo-1-2030-01-07-0900\",\n      \"branchId\": \"palermo\",\n      \"activityId\": \"palermo-1\",\n      \"startsAt\": 1894017600000,\n      \"endsAt\": 1894021200000,\n      \"capacity\": 20,\n      \"confirmedCount\": 3,\n      \"remainingCapacity\": 17,\n      \"bookable\": true\n    },\n    {\n      \"id\": \"palermo-1-2030-01-07-1800\",\n      \"branchId\": \"palermo\",\n      \"activityId\": \"palermo-1\",\n      \"startsAt\": 1894050000000,\n      \"endsAt\": 1894053600000,\n      \"capacity\": 20,\n      \"confirmedCount\": 0,\n      \"remainingCapacity\": 20,\n      \"bookable\": true\n    }\n  ]\n}"
+            },
+            {
+              "name": "400 — Filtro desconocido o identificador con caracteres no permitidos",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/sessions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sessions"
+                  ],
+                  "query": [
+                    {
+                      "key": "branchId",
+                      "value": "{{venueId}}",
+                      "disabled": true,
+                      "description": "Filtro opcional por sede."
+                    },
+                    {
+                      "key": "activityId",
+                      "value": "palermo-1",
+                      "disabled": true,
+                      "description": "Filtro opcional por clase."
+                    }
+                  ]
+                },
+                "description": "Devuelve solo sesiones que todavía no comenzaron, ordenadas por inicio. Filtros opcionales branchId y activityId; un id desconocido devuelve una lista vacía. Una sesión llena se incluye con remainingCapacity 0 y bookable false para que la app pueda mostrarla."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Filtros permitidos: branchId y activityId, como identificadores.\"\n  }\n}"
+            },
+            {
+              "name": "401 — Falta el encabezado Authorization",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/sessions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sessions"
+                  ],
+                  "query": [
+                    {
+                      "key": "branchId",
+                      "value": "{{venueId}}",
+                      "disabled": true,
+                      "description": "Filtro opcional por sede."
+                    },
+                    {
+                      "key": "activityId",
+                      "value": "palermo-1",
+                      "disabled": true,
+                      "description": "Filtro opcional por clase."
+                    }
+                  ]
+                },
+                "description": "Devuelve solo sesiones que todavía no comenzaron, ordenadas por inicio. Filtros opcionales branchId y activityId; un id desconocido devuelve una lista vacía. Una sesión llena se incluye con remainingCapacity 0 y bookable false para que la app pueda mostrarla."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNAUTHORIZED\",\n    \"message\": \"Se requiere un token Bearer.\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Ver una sesión",
+          "id": "7bd98522-522c-550c-b4ab-4773574079e3",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sessions/{{sessionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "sessions",
+                "{{sessionId}}"
+              ]
+            },
+            "description": "Devuelve la sesión incluso si ya comenzó; en ese caso bookable es false. Los cupos se calculan con las reservas CONFIRMED al momento de la consulta."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('responde JSON', () => pm.response.to.be.json);",
+                  "pm.test('informa cupos', () => pm.expect(pm.response.json().data.remainingCapacity).to.be.at.least(0));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 — Sesión y sus cupos. Incluye sesiones pasadas con bookable false",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/sessions/{{sessionId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sessions",
+                    "{{sessionId}}"
+                  ]
+                },
+                "description": "Devuelve la sesión incluso si ya comenzó; en ese caso bookable es false. Los cupos se calculan con las reservas CONFIRMED al momento de la consulta."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"data\": {\n    \"id\": \"palermo-1-2030-01-07-0900\",\n    \"branchId\": \"palermo\",\n    \"activityId\": \"palermo-1\",\n    \"startsAt\": 1894017600000,\n    \"endsAt\": 1894021200000,\n    \"capacity\": 20,\n    \"confirmedCount\": 3,\n    \"remainingCapacity\": 17,\n    \"bookable\": true\n  }\n}"
+            },
+            {
+              "name": "400 — El identificador tiene caracteres no permitidos o supera 128 caracteres",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/sessions/{{sessionId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sessions",
+                    "{{sessionId}}"
+                  ]
+                },
+                "description": "Devuelve la sesión incluso si ya comenzó; en ese caso bookable es false. Los cupos se calculan con las reservas CONFIRMED al momento de la consulta."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Identificador de sesión inválido.\"\n  }\n}"
+            },
+            {
+              "name": "401 — Falta el encabezado Authorization",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/sessions/{{sessionId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sessions",
+                    "{{sessionId}}"
+                  ]
+                },
+                "description": "Devuelve la sesión incluso si ya comenzó; en ese caso bookable es false. Los cupos se calculan con las reservas CONFIRMED al momento de la consulta."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNAUTHORIZED\",\n    \"message\": \"Se requiere un token Bearer.\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reservas",
+      "description": "Reservas del usuario autenticado: crear, listar y cancelar.",
+      "item": [
+        {
+          "name": "Crear una reserva",
+          "id": "4e3f8cf6-7995-510d-bb14-c344a493f902",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{sessionId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Usar un sessionId obtenido de GET /api/sessions; el cuerpo admite esa única propiedad y el usuario sale del JWT. Solo las reservas CONFIRMED ocupan cupo y bloquean horarios: no se permite superposición para el mismo usuario, incluso entre sedes, aunque sí sesiones consecutivas (el fin es exclusivo)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('responde JSON', () => pm.response.to.be.json);",
+                  "const data = pm.response.json().data;",
+                  "pm.test('queda confirmada', () => pm.expect(data.status).to.eql('CONFIRMED'));",
+                  "pm.collectionVariables.set('reservationId', data.id);"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "201 — Reserva confirmada, con la sesión y sus cupos ya actualizados",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionId\": \"{{sessionId}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservations",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reservations"
+                  ]
+                },
+                "description": "Usar un sessionId obtenido de GET /api/sessions; el cuerpo admite esa única propiedad y el usuario sale del JWT. Solo las reservas CONFIRMED ocupan cupo y bloquean horarios: no se permite superposición para el mismo usuario, incluso entre sedes, aunque sí sesiones consecutivas (el fin es exclusivo)."
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"data\": {\n    \"id\": \"9f2b1f1e-7c4a-4d28-9a35-1f0c6b8e2d41\",\n    \"userId\": \"user-demo\",\n    \"sessionId\": \"palermo-1-2030-01-07-0900\",\n    \"status\": \"CONFIRMED\",\n    \"createdAt\": 1893964800000,\n    \"cancelledAt\": null,\n    \"session\": {\n      \"id\": \"palermo-1-2030-01-07-0900\",\n      \"branchId\": \"palermo\",\n      \"activityId\": \"palermo-1\",\n      \"startsAt\": 1894017600000,\n      \"endsAt\": 1894021200000,\n      \"capacity\": 20,\n      \"confirmedCount\": 4,\n      \"remainingCapacity\": 16,\n      \"bookable\": true\n    }\n  }\n}"
+            },
+            {
+              "name": "400 — Cuerpo vacío, con propiedades extra (incluido userId) o sessionId inválido",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionId\": \"{{sessionId}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservations",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reservations"
+                  ]
+                },
+                "description": "Usar un sessionId obtenido de GET /api/sessions; el cuerpo admite esa única propiedad y el usuario sale del JWT. Solo las reservas CONFIRMED ocupan cupo y bloquean horarios: no se permite superposición para el mismo usuario, incluso entre sedes, aunque sí sesiones consecutivas (el fin es exclusivo)."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Enviar únicamente sessionId como identificador válido.\"\n  }\n}"
+            },
+            {
+              "name": "401 — Falta el encabezado Authorization",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionId\": \"{{sessionId}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservations",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reservations"
+                  ]
+                },
+                "description": "Usar un sessionId obtenido de GET /api/sessions; el cuerpo admite esa única propiedad y el usuario sale del JWT. Solo las reservas CONFIRMED ocupan cupo y bloquean horarios: no se permite superposición para el mismo usuario, incluso entre sedes, aunque sí sesiones consecutivas (el fin es exclusivo)."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNAUTHORIZED\",\n    \"message\": \"Se requiere un token Bearer.\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Mis reservas",
+          "id": "dfaef539-db76-58ce-a497-ea6a5cfd38ce",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "me"
+              ]
+            },
+            "description": "Devuelve únicamente las reservas del usuario del JWT, confirmadas y canceladas, ordenadas por inicio de sesión y luego por fecha de creación. No admite userId ni otros filtros."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('responde JSON', () => pm.response.to.be.json);",
+                  "pm.test('son todas mías', () => pm.response.json().data.forEach(r => pm.expect(r.userId).to.be.a('string')));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 — Reservas del usuario, con la sesión y sus cupos actuales",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservations/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reservations",
+                    "me"
+                  ]
+                },
+                "description": "Devuelve únicamente las reservas del usuario del JWT, confirmadas y canceladas, ordenadas por inicio de sesión y luego por fecha de creación. No admite userId ni otros filtros."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"9f2b1f1e-7c4a-4d28-9a35-1f0c6b8e2d41\",\n      \"userId\": \"user-demo\",\n      \"sessionId\": \"palermo-1-2030-01-07-0900\",\n      \"status\": \"CONFIRMED\",\n      \"createdAt\": 1893964800000,\n      \"cancelledAt\": null,\n      \"session\": {\n        \"id\": \"palermo-1-2030-01-07-0900\",\n        \"branchId\": \"palermo\",\n        \"activityId\": \"palermo-1\",\n        \"startsAt\": 1894017600000,\n        \"endsAt\": 1894021200000,\n        \"capacity\": 20,\n        \"confirmedCount\": 3,\n        \"remainingCapacity\": 17,\n        \"bookable\": true\n      }\n    },\n    {\n      \"id\": \"9f2b1f1e-7c4a-4d28-9a35-1f0c6b8e2d41\",\n      \"userId\": \"user-demo\",\n      \"sessionId\": \"palermo-1-2030-01-07-1800\",\n      \"status\": \"CANCELLED\",\n      \"createdAt\": 1893964800000,\n      \"cancelledAt\": 1893965400000,\n      \"session\": {\n        \"id\": \"palermo-1-2030-01-07-1800\",\n        \"branchId\": \"palermo\",\n        \"activityId\": \"palermo-1\",\n        \"startsAt\": 1894050000000,\n        \"endsAt\": 1894053600000,\n        \"capacity\": 20,\n        \"confirmedCount\": 0,\n        \"remainingCapacity\": 20,\n        \"bookable\": true\n      }\n    }\n  ]\n}"
+            },
+            {
+              "name": "400 — Se envió cualquier parámetro de consulta",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservations/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reservations",
+                    "me"
+                  ]
+                },
+                "description": "Devuelve únicamente las reservas del usuario del JWT, confirmadas y canceladas, ordenadas por inicio de sesión y luego por fecha de creación. No admite userId ni otros filtros."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Este endpoint no admite filtros.\"\n  }\n}"
+            },
+            {
+              "name": "401 — Falta el encabezado Authorization",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservations/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reservations",
+                    "me"
+                  ]
+                },
+                "description": "Devuelve únicamente las reservas del usuario del JWT, confirmadas y canceladas, ordenadas por inicio de sesión y luego por fecha de creación. No admite userId ni otros filtros."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNAUTHORIZED\",\n    \"message\": \"Se requiere un token Bearer.\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cancelar una reserva",
+          "id": "5ec1b512-6ed1-5dc9-87d3-083a25fe37dd",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "{{reservationId}}",
+                "cancel"
+              ]
+            },
+            "description": "Se envía sin cuerpo o con un objeto vacío. Libera el cupo en el momento. La operación es idempotente: repetirla devuelve 200 sin modificar cancelledAt. La reserva cancelada queda en el historial; para volver a la sesión hay que crear una reserva nueva."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('responde JSON', () => pm.response.to.be.json);",
+                  "const data = pm.response.json().data;",
+                  "pm.test('queda cancelada', () => pm.expect(data.status).to.eql('CANCELLED'));",
+                  "pm.test('libera el cupo', () => pm.expect(data.session.remainingCapacity).to.be.above(0));"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 — Reserva cancelada y cupo liberado",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/cancel",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reservations",
+                    "{{reservationId}}",
+                    "cancel"
+                  ]
+                },
+                "description": "Se envía sin cuerpo o con un objeto vacío. Libera el cupo en el momento. La operación es idempotente: repetirla devuelve 200 sin modificar cancelledAt. La reserva cancelada queda en el historial; para volver a la sesión hay que crear una reserva nueva."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"data\": {\n    \"id\": \"9f2b1f1e-7c4a-4d28-9a35-1f0c6b8e2d41\",\n    \"userId\": \"user-demo\",\n    \"sessionId\": \"palermo-1-2030-01-07-0900\",\n    \"status\": \"CANCELLED\",\n    \"createdAt\": 1893964800000,\n    \"cancelledAt\": 1893965400000,\n    \"session\": {\n      \"id\": \"palermo-1-2030-01-07-0900\",\n      \"branchId\": \"palermo\",\n      \"activityId\": \"palermo-1\",\n      \"startsAt\": 1894017600000,\n      \"endsAt\": 1894021200000,\n      \"capacity\": 20,\n      \"confirmedCount\": 3,\n      \"remainingCapacity\": 17,\n      \"bookable\": true\n    }\n  }\n}"
+            },
+            {
+              "name": "400 — Identificador inválido o cuerpo con propiedades",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/cancel",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reservations",
+                    "{{reservationId}}",
+                    "cancel"
+                  ]
+                },
+                "description": "Se envía sin cuerpo o con un objeto vacío. Libera el cupo en el momento. La operación es idempotente: repetirla devuelve 200 sin modificar cancelledAt. La reserva cancelada queda en el historial; para volver a la sesión hay que crear una reserva nueva."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Identificador inválido o cuerpo no vacío.\"\n  }\n}"
+            },
+            {
+              "name": "401 — Falta el encabezado Authorization",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/cancel",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reservations",
+                    "{{reservationId}}",
+                    "cancel"
+                  ]
+                },
+                "description": "Se envía sin cuerpo o con un objeto vacío. Libera el cupo en el momento. La operación es idempotente: repetirla devuelve 200 sin modificar cancelledAt. La reserva cancelada queda en el historial; para volver a la sesión hay que crear una reserva nueva."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": {\n    \"code\": \"UNAUTHORIZED\",\n    \"message\": \"Se requiere un token Bearer.\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "demo@sportclub.com",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "SportClub123!",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "venueId",
+      "value": "palermo",
+      "type": "string"
+    },
+    {
+      "key": "sessionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "reservationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cuentaNuevaToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

@@ -3,7 +3,7 @@
   "info": {
     "title": "SportClub API",
     "version": "1.0.0",
-    "description": "API del challenge FullStack Mobile. Para probar los endpoints protegidos: ejecutá POST /api/auth/login con el usuario demo, copiá token y pegalo en Authorize (sin el prefijo Bearer).\n\nConvenciones: las respuestas exitosas devuelven { data }, salvo login, que devuelve { token, tokenType, expiresIn, user }. Los errores usan { error: { code, message } } y el mismo código HTTP en todos los endpoints. Una ruta inexistente responde 404 con code NOT_FOUND. Las marcas de tiempo (startsAt, endsAt, createdAt, cancelledAt) son timestamps Unix en milisegundos UTC. Los cuerpos JSON admiten hasta 16 KB; superarlo devuelve 413."
+    "description": "API del challenge FullStack Mobile. Para probar los endpoints protegidos: ejecutá POST /api/auth/login con el usuario demo, o creá una cuenta con POST /api/auth/register, copiá token y pegalo en Authorize (sin el prefijo Bearer).\n\nConvenciones: las respuestas exitosas devuelven { data }, salvo login, que devuelve { token, tokenType, expiresIn, user }. Los errores usan { error: { code, message } } y el mismo código HTTP en todos los endpoints. Una ruta inexistente responde 404 con code NOT_FOUND. Las marcas de tiempo (startsAt, endsAt, createdAt, cancelledAt) son timestamps Unix en milisegundos UTC. Los cuerpos JSON admiten hasta 16 KB; superarlo devuelve 413."
   },
   "servers": [
     {
@@ -164,6 +164,169 @@
                   "error": {
                     "code": "INVALID_CREDENTIALS",
                     "message": "Email o contraseña incorrectos."
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "El cuerpo supera 16 KB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": "request entity too large"
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes alcanzado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "TOO_MANY_REQUESTS",
+                    "message": "Demasiados intentos. Intentá más tarde."
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": "Ocurrió un error interno."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "operationId": "register",
+        "summary": "Crear una cuenta",
+        "description": "Crea el usuario y devuelve una sesión ya iniciada, con la misma forma que login, para que la app no tenga que pedir la contraseña de nuevo. El email debe ser único y se normaliza a minúsculas; no admite espacios alrededor, igual que en login. phone es opcional y queda vacío si no se envía. La contraseña se guarda con scrypt y salt, y nunca se devuelve. Máximo 20 solicitudes cada 15 minutos por IP.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              },
+              "example": {
+                "firstName": "Fernando",
+                "lastName": "Marina",
+                "email": "fernando@sportclub.com",
+                "password": "UnaClaveSegura1",
+                "phone": "+54 11 5555 5555"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cuenta creada y sesión iniciada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                },
+                "example": {
+                  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTM5MDAwMjUsImV4cCI6MTc5MzkwMzYyNSwiYXVkIjoic3BvcnRjbHViLW1vYmlsZSIsImlzcyI6InNwb3J0Y2x1Yi1hcGkiLCJzdWIiOiIzZjlhMmM4ZS0xYjc0LTRkMGEtOGM1MS03ZTJhOWQ0YjNmNjEifQ.Qw8Zz3r1kR0m9VvT2nJpXcL5sYbA7dEuH4gFiK6oPqM",
+                  "tokenType": "Bearer",
+                  "expiresIn": 3600,
+                  "user": {
+                    "id": "3f9a2c8e-1b74-4d0a-8c51-7e2a9d4b3f61",
+                    "firstName": "Fernando",
+                    "lastName": "Marina",
+                    "email": "fernando@sportclub.com",
+                    "phone": "+54 11 5555 5555"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos, campos no permitidos o JSON mal formado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "campoNoPermitido": {
+                    "summary": "El cuerpo incluye una clave fuera de las permitidas, como id o passwordHash",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Campos permitidos: firstName, lastName, email, password y phone."
+                      }
+                    }
+                  },
+                  "contraseñaCorta": {
+                    "summary": "Menos de 8 caracteres",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "La contraseña debe tener entre 8 y 128 caracteres."
+                      }
+                    }
+                  },
+                  "emailInvalido": {
+                    "summary": "Formato inválido o con espacios alrededor",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Ingresá un email válido."
+                      }
+                    }
+                  },
+                  "nombreInvalido": {
+                    "summary": "Nombre o apellido vacío o de más de 80 caracteres",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Ingresá un nombre y un apellido de hasta 80 caracteres."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya hay una cuenta con ese email.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "EMAIL_TAKEN",
+                    "message": "Ya existe una cuenta con ese email."
                   }
                 }
               }
@@ -1652,6 +1815,54 @@
           "password"
         ]
       },
+      "RegisterRequest": {
+        "type": "object",
+        "description": "Alta de cuenta. Solo estas propiedades; el id lo asigna el servidor.",
+        "required": [
+          "firstName",
+          "lastName",
+          "email",
+          "password"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "Se recortan espacios; no puede quedar vacío.",
+            "example": "Fernando"
+          },
+          "lastName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "Se recortan espacios; no puede quedar vacío.",
+            "example": "Marina"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "Debe ser único. Se normaliza a minúsculas y no admite espacios alrededor.",
+            "example": "fernando@sportclub.com"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 8,
+            "maxLength": 128,
+            "description": "Se almacena con scrypt y salt; nunca se devuelve.",
+            "example": "UnaClaveSegura1"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^$|^\\+?[0-9 ()-]{6,25}$",
+            "description": "Opcional; queda vacío si no se envía.",
+            "example": "+54 11 5555 5555"
+          }
+        }
+      },
       "LoginResponse": {
         "type": "object",
         "properties": {
@@ -1679,7 +1890,8 @@
           "tokenType",
           "expiresIn",
           "user"
-        ]
+        ],
+        "description": "Sesión emitida por login y por el alta de cuenta."
       },
       "ProfileUpdate": {
         "type": "object",

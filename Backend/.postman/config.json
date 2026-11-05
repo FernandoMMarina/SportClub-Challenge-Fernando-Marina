@@ -3,13 +3,17 @@
     "id": "57aa4d41-3c75-4908-8d3b-72408479460e"
   },
   "entities": {
-    "environments": [],
+    "environments": [
+      "../postman/environments/local.postman_environment.json"
+    ],
     "flows": [],
     "globals": [],
     "mocks": [],
     "specs": [
       "../src/docs/openapi.json"
     ],
-    "collections": []
+    "collections": [
+      "../postman/collections/sportclub-api.postman_collection.json"
+    ]
   }
 }

@@ -24,6 +24,20 @@ function createUserRepository(file) {
   return {
     findByEmail: email => read().find(user => user.email === email),
     findById: id => read().find(user => user.id === id),
+    /**
+     * Alta de usuario. Leer, comprobar el email y escribir ocurre sin await,
+     * así que dos registros simultáneos no pueden intercalarse en un solo proceso.
+     * @returns el usuario creado, o undefined si el email ya está tomado.
+     */
+    create({ firstName, lastName, email, phone = '', password }) {
+      const users = read();
+      if (users.some(user => user.email === email)) return undefined;
+      const user = { id: randomUUID(), firstName, lastName, email, phone,
+        passwordHash: hashPassword(password) };
+      users.push(user);
+      save(users);
+      return user;
+    },
     update(id, changes) {
       const users = read();
       const user = users.find(item => item.id === id);
