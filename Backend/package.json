@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node --env-file=.env ./bin/www",
+    "start": "node --env-file-if-exists=.env ./bin/www",
     "dev": "node --env-file=.env --watch ./bin/www",
     "test": "node --test"
   },
