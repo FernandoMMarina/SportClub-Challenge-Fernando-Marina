@@ -41,6 +41,13 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
       <View style={styles.buttonContainer}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Mis reservas"
+          onPress={() => router.push('/my-reservations')}
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
+          <Text style={styles.buttonLabel}>Mis reservas</Text>
+        </Pressable>
+      </View>
+      <View style={styles.buttonContainer}>
         <Pressable accessibilityRole="button" accessibilityLabel="Cerrar sesión"
           onPress={signOut}
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
