@@ -3,32 +3,42 @@
   "info": {
     "title": "SportClub API",
     "version": "1.0.0",
-    "description": "API del challenge FullStack Mobile. Para probar el perfil: ejecutá POST /api/auth/login con el usuario demo, copiá token y pegalo en Authorize (sin el prefijo Bearer). Los endpoints públicos no requieren autenticación. Los cuerpos JSON admiten hasta 16 KB."
+    "description": "API del challenge FullStack Mobile. Para probar los endpoints protegidos: ejecutá POST /api/auth/login con el usuario demo, copiá token y pegalo en Authorize (sin el prefijo Bearer).\n\nConvenciones: las respuestas exitosas devuelven { data }, salvo login, que devuelve { token, tokenType, expiresIn, user }. Los errores usan { error: { code, message } } y el mismo código HTTP en todos los endpoints. Una ruta inexistente responde 404 con code NOT_FOUND. Las marcas de tiempo (startsAt, endsAt, createdAt, cancelledAt) son timestamps Unix en milisegundos UTC. Los cuerpos JSON admiten hasta 16 KB; superarlo devuelve 413."
   },
   "servers": [
     {
       "url": "/",
       "description": "Servidor actual"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Desarrollo local"
     }
   ],
   "tags": [
     {
-      "name": "Estado"
+      "name": "Estado",
+      "description": "Chequeo de disponibilidad del servidor."
     },
     {
-      "name": "Autenticación"
+      "name": "Autenticación",
+      "description": "Login con email y contraseña; emite el JWT que usan los endpoints protegidos."
     },
     {
-      "name": "Perfil"
+      "name": "Perfil",
+      "description": "Datos del usuario autenticado."
     },
     {
-      "name": "Sedes"
+      "name": "Sedes",
+      "description": "Catálogo público de sedes y sus clases."
     },
     {
-      "name": "Sesiones"
+      "name": "Sesiones",
+      "description": "Sesiones agendadas de cada clase, con cupos y disponibilidad."
     },
     {
-      "name": "Reservas"
+      "name": "Reservas",
+      "description": "Reservas del usuario autenticado: crear, listar y cancelar."
     }
   ],
   "paths": {
@@ -39,6 +49,7 @@
         ],
         "operationId": "getHealth",
         "summary": "Consultar estado del servidor",
+        "description": "No requiere autenticación. Responde 200 mientras el proceso acepta solicitudes; útil para monitoreo.",
         "responses": {
           "200": {
             "description": "Servidor disponible.",
@@ -96,6 +107,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LoginResponse"
+                },
+                "example": {
+                  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTM5MDAwMjUsImV4cCI6MTc5MzkwMzYyNSwiYXVkIjoic3BvcnRjbHViLW1vYmlsZSIsImlzcyI6InNwb3J0Y2x1Yi1hcGkiLCJzdWIiOiJ1c2VyLWRlbW8ifQ.5-6N_00IdWQA0gZVcTYqjsJPaZUUwzdedgPAVZ9kBxM",
+                  "tokenType": "Bearer",
+                  "expiresIn": 3600,
+                  "user": {
+                    "id": "user-demo",
+                    "firstName": "Alex",
+                    "lastName": "García",
+                    "email": "demo@sportclub.com",
+                    "phone": "+54 11 1234 5678"
+                  }
                 }
               }
             }
@@ -107,10 +130,24 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 },
-                "example": {
-                  "error": {
-                    "code": "VALIDATION_ERROR",
-                    "message": "Ingresá un email y una contraseña válidos."
+                "examples": {
+                  "camposInvalidos": {
+                    "summary": "Email con formato inválido o contraseña vacía",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Ingresá un email y una contraseña válidos."
+                      }
+                    }
+                  },
+                  "jsonMalFormado": {
+                    "summary": "El cuerpo no es JSON válido",
+                    "value": {
+                      "error": {
+                        "code": "INVALID_REQUEST",
+                        "message": "Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+                      }
+                    }
                   }
                 }
               }
@@ -190,6 +227,7 @@
         ],
         "operationId": "getProfile",
         "summary": "Obtener el perfil autenticado",
+        "description": "Devuelve el usuario asociado al JWT. phone puede ser una cadena vacía si el perfil no lo tiene cargado.",
         "security": [
           {
             "bearerAuth": []
@@ -216,16 +254,39 @@
             }
           },
           "401": {
-            "description": "Token ausente, inválido, vencido o usuario inexistente.",
+            "description": "JWT ausente, inválido, vencido o usuario inexistente.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 },
-                "example": {
-                  "error": {
-                    "code": "UNAUTHORIZED",
-                    "message": "Token inválido o vencido."
+                "examples": {
+                  "sinToken": {
+                    "summary": "Falta el encabezado Authorization",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Se requiere un token Bearer."
+                      }
+                    }
+                  },
+                  "tokenInvalido": {
+                    "summary": "Token mal formado, firmado con otra clave o vencido",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Token inválido o vencido."
+                      }
+                    }
+                  },
+                  "usuarioInexistente": {
+                    "summary": "El token es válido pero el usuario ya no existe",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Usuario no autorizado."
+                      }
+                    }
                   }
                 }
               }
@@ -296,32 +357,78 @@
             }
           },
           "400": {
-            "description": "Campos inválidos, desconocidos o cuerpo vacío.",
+            "description": "Datos inválidos o JSON mal formado.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 },
-                "example": {
-                  "error": {
-                    "code": "VALIDATION_ERROR",
-                    "message": "Campos permitidos: firstName, lastName y phone."
+                "examples": {
+                  "campoNoPermitido": {
+                    "summary": "El cuerpo incluye una clave distinta de firstName, lastName o phone",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Campos permitidos: firstName, lastName y phone."
+                      }
+                    }
+                  },
+                  "valorInvalido": {
+                    "summary": "Nombre vacío, de más de 80 caracteres o teléfono con formato inválido",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "El campo phone es inválido."
+                      }
+                    }
+                  },
+                  "cuerpoVacio": {
+                    "summary": "Objeto sin propiedades",
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Campos permitidos: firstName, lastName y phone."
+                      }
+                    }
                   }
                 }
               }
             }
           },
           "401": {
-            "description": "Token ausente, inválido, vencido o usuario inexistente.",
+            "description": "JWT ausente, inválido, vencido o usuario inexistente.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 },
-                "example": {
-                  "error": {
-                    "code": "UNAUTHORIZED",
-                    "message": "Token inválido o vencido."
+                "examples": {
+                  "sinToken": {
+                    "summary": "Falta el encabezado Authorization",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Se requiere un token Bearer."
+                      }
+                    }
+                  },
+                  "tokenInvalido": {
+                    "summary": "Token mal formado, firmado con otra clave o vencido",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Token inválido o vencido."
+                      }
+                    }
+                  },
+                  "usuarioInexistente": {
+                    "summary": "El token es válido pero el usuario ya no existe",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Usuario no autorizado."
+                      }
+                    }
                   }
                 }
               }
@@ -513,6 +620,7 @@
         ],
         "operationId": "getVenue",
         "summary": "Consultar una sede",
+        "description": "Catálogo estático. Los ids disponibles son palermo y belgrano; cualquier otro devuelve 404.",
         "parameters": [
           {
             "name": "id",
@@ -623,24 +731,86 @@
         ],
         "operationId": "listSessions",
         "summary": "Consultar próximas sesiones y cupos",
+        "description": "Devuelve solo sesiones que todavía no comenzaron, ordenadas por inicio. Filtros opcionales branchId y activityId; un id desconocido devuelve una lista vacía. Una sesión llena se incluye con remainingCapacity 0 y bookable false para que la app pueda mostrarla.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "branchId",
+            "in": "query",
+            "required": false,
+            "description": "Filtrar por sede. Un id desconocido devuelve una lista vacía.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,127}$"
+            },
+            "example": "palermo"
+          },
+          {
+            "name": "activityId",
+            "in": "query",
+            "required": false,
+            "description": "Filtrar por clase. Un id desconocido devuelve una lista vacía.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,127}$"
+            },
+            "example": "palermo-1"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Sesiones futuras, incluyendo las completas para mostrar su disponibilidad.",
+            "description": "Sesiones futuras con sus cupos, incluyendo las completas.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SessionsResponse"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "belgrano-1-2030-01-07-0900",
+                      "branchId": "belgrano",
+                      "activityId": "belgrano-1",
+                      "startsAt": 1894017600000,
+                      "endsAt": 1894021200000,
+                      "capacity": 20,
+                      "confirmedCount": 20,
+                      "remainingCapacity": 0,
+                      "bookable": false
+                    },
+                    {
+                      "id": "palermo-1-2030-01-07-0900",
+                      "branchId": "palermo",
+                      "activityId": "palermo-1",
+                      "startsAt": 1894017600000,
+                      "endsAt": 1894021200000,
+                      "capacity": 20,
+                      "confirmedCount": 3,
+                      "remainingCapacity": 17,
+                      "bookable": true
+                    },
+                    {
+                      "id": "palermo-1-2030-01-07-1800",
+                      "branchId": "palermo",
+                      "activityId": "palermo-1",
+                      "startsAt": 1894050000000,
+                      "endsAt": 1894053600000,
+                      "capacity": 20,
+                      "confirmedCount": 0,
+                      "remainingCapacity": 20,
+                      "bookable": true
+                    }
+                  ]
                 }
               }
             }
           },
           "400": {
-            "description": "Identificadores, filtros o cuerpo inválidos. No se acepta userId.",
+            "description": "Filtro desconocido o identificador con caracteres no permitidos.",
             "content": {
               "application/json": {
                 "schema": {
@@ -649,7 +819,7 @@
                 "example": {
                   "error": {
                     "code": "VALIDATION_ERROR",
-                    "message": "Enviar únicamente sessionId como identificador válido."
+                    "message": "Filtros permitidos: branchId y activityId, como identificadores."
                   }
                 }
               }
@@ -662,17 +832,40 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 },
-                "example": {
-                  "error": {
-                    "code": "UNAUTHORIZED",
-                    "message": "Usuario no autorizado."
+                "examples": {
+                  "sinToken": {
+                    "summary": "Falta el encabezado Authorization",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Se requiere un token Bearer."
+                      }
+                    }
+                  },
+                  "tokenInvalido": {
+                    "summary": "Token mal formado, firmado con otra clave o vencido",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Token inválido o vencido."
+                      }
+                    }
+                  },
+                  "usuarioInexistente": {
+                    "summary": "El token es válido pero el usuario ya no existe",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Usuario no autorizado."
+                      }
+                    }
                   }
                 }
               }
             }
           },
           "500": {
-            "description": "Falla de lectura o escritura; la reserva no se confirma.",
+            "description": "Falla al leer el archivo de reservas.",
             "content": {
               "application/json": {
                 "schema": {
@@ -687,28 +880,7 @@
               }
             }
           }
-        },
-        "parameters": [
-          {
-            "name": "branchId",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Filtrar por sede."
-          },
-          {
-            "name": "activityId",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Filtrar por actividad."
-          }
-        ],
-        "description": "Filtros opcionales. Una sesión llena devuelve remainingCapacity=0 y bookable=false. IDs de filtro desconocidos devuelven una lista vacía."
+        }
       }
     },
     "/api/sessions/{id}": {
@@ -718,24 +890,106 @@
         ],
         "operationId": "getSession",
         "summary": "Consultar una sesión y sus cupos",
+        "description": "Devuelve la sesión incluso si ya comenzó; en ese caso bookable es false. Los cupos se calculan con las reservas CONFIRMED al momento de la consulta.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador de sesión devuelto por GET /api/sessions.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,127}$"
+            },
+            "example": "palermo-1-2030-01-07-0900"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Incluye sesiones pasadas con bookable=false.",
+            "description": "Sesión y sus cupos. Incluye sesiones pasadas con bookable false.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SessionResponse"
+                },
+                "example": {
+                  "data": {
+                    "id": "palermo-1-2030-01-07-0900",
+                    "branchId": "palermo",
+                    "activityId": "palermo-1",
+                    "startsAt": 1894017600000,
+                    "endsAt": 1894021200000,
+                    "capacity": 20,
+                    "confirmedCount": 3,
+                    "remainingCapacity": 17,
+                    "bookable": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "El identificador tiene caracteres no permitidos o supera 128 caracteres.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Identificador de sesión inválido."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT ausente, inválido, vencido o usuario inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "sinToken": {
+                    "summary": "Falta el encabezado Authorization",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Se requiere un token Bearer."
+                      }
+                    }
+                  },
+                  "tokenInvalido": {
+                    "summary": "Token mal formado, firmado con otra clave o vencido",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Token inválido o vencido."
+                      }
+                    }
+                  },
+                  "usuarioInexistente": {
+                    "summary": "El token es válido pero el usuario ya no existe",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Usuario no autorizado."
+                      }
+                    }
+                  }
                 }
               }
             }
           },
           "404": {
-            "description": "Sesión inexistente.",
+            "description": "La sesión no existe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -750,8 +1004,85 @@
               }
             }
           },
+          "500": {
+            "description": "Falla al leer el archivo de reservas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": "Ocurrió un error interno."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reservations": {
+      "post": {
+        "tags": [
+          "Reservas"
+        ],
+        "operationId": "createReservation",
+        "summary": "Confirmar una reserva",
+        "description": "Usar un sessionId obtenido de GET /api/sessions; el cuerpo admite esa única propiedad y el usuario sale del JWT. Solo las reservas CONFIRMED ocupan cupo y bloquean horarios: no se permite superposición para el mismo usuario, incluso entre sedes, aunque sí sesiones consecutivas (el fin es exclusivo).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReservation"
+              },
+              "example": {
+                "sessionId": "palermo-1-2030-01-07-0900"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Reserva confirmada, con la sesión y sus cupos ya actualizados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationResponse"
+                },
+                "example": {
+                  "data": {
+                    "id": "9f2b1f1e-7c4a-4d28-9a35-1f0c6b8e2d41",
+                    "userId": "user-demo",
+                    "sessionId": "palermo-1-2030-01-07-0900",
+                    "status": "CONFIRMED",
+                    "createdAt": 1893964800000,
+                    "cancelledAt": null,
+                    "session": {
+                      "id": "palermo-1-2030-01-07-0900",
+                      "branchId": "palermo",
+                      "activityId": "palermo-1",
+                      "startsAt": 1894017600000,
+                      "endsAt": 1894021200000,
+                      "capacity": 20,
+                      "confirmedCount": 4,
+                      "remainingCapacity": 16,
+                      "bookable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
           "400": {
-            "description": "Identificadores, filtros o cuerpo inválidos. No se acepta userId.",
+            "description": "Cuerpo vacío, con propiedades extra (incluido userId) o sessionId inválido.",
             "content": {
               "application/json": {
                 "schema": {
@@ -773,70 +1104,40 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 },
-                "example": {
-                  "error": {
-                    "code": "UNAUTHORIZED",
-                    "message": "Usuario no autorizado."
+                "examples": {
+                  "sinToken": {
+                    "summary": "Falta el encabezado Authorization",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Se requiere un token Bearer."
+                      }
+                    }
+                  },
+                  "tokenInvalido": {
+                    "summary": "Token mal formado, firmado con otra clave o vencido",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Token inválido o vencido."
+                      }
+                    }
+                  },
+                  "usuarioInexistente": {
+                    "summary": "El token es válido pero el usuario ya no existe",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Usuario no autorizado."
+                      }
+                    }
                   }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Falla de lectura o escritura; la reserva no se confirma.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "example": {
-                  "error": {
-                    "code": "INTERNAL_ERROR",
-                    "message": "Ocurrió un error interno."
-                  }
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Identificador devuelto por la API."
-          }
-        ]
-      }
-    },
-    "/api/reservations": {
-      "post": {
-        "tags": [
-          "Reservas"
-        ],
-        "operationId": "createReservation",
-        "summary": "Confirmar una reserva",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Reserva confirmada y cupos actualizados.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReservationResponse"
                 }
               }
             }
           },
           "404": {
-            "description": "Sesión inexistente.",
+            "description": "La sesión no existe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -852,23 +1153,55 @@
             }
           },
           "409": {
-            "description": "Conflicto: DUPLICATE_RESERVATION, SESSION_FULL, SCHEDULE_CONFLICT o SESSION_STARTED.",
+            "description": "La reserva no se puede confirmar por el estado de la sesión o del usuario.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 },
-                "example": {
-                  "error": {
-                    "code": "SESSION_FULL",
-                    "message": "La sesión no tiene cupos disponibles."
+                "examples": {
+                  "sesionLlena": {
+                    "summary": "No quedan cupos",
+                    "value": {
+                      "error": {
+                        "code": "SESSION_FULL",
+                        "message": "La sesión no tiene cupos disponibles."
+                      }
+                    }
+                  },
+                  "reservaDuplicada": {
+                    "summary": "Ya existe una reserva confirmada del usuario para esa sesión",
+                    "value": {
+                      "error": {
+                        "code": "DUPLICATE_RESERVATION",
+                        "message": "Ya tenés una reserva confirmada para esta sesión."
+                      }
+                    }
+                  },
+                  "horarioSuperpuesto": {
+                    "summary": "Se superpone con otra reserva confirmada, incluso en otra sede",
+                    "value": {
+                      "error": {
+                        "code": "SCHEDULE_CONFLICT",
+                        "message": "La sesión se superpone con otra reserva confirmada."
+                      }
+                    }
+                  },
+                  "sesionComenzada": {
+                    "summary": "La sesión ya empezó",
+                    "value": {
+                      "error": {
+                        "code": "SESSION_STARTED",
+                        "message": "La sesión ya comenzó."
+                      }
+                    }
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "Identificadores, filtros o cuerpo inválidos. No se acepta userId.",
+          "413": {
+            "description": "El cuerpo supera 16 KB.",
             "content": {
               "application/json": {
                 "schema": {
@@ -876,31 +1209,15 @@
                 },
                 "example": {
                   "error": {
-                    "code": "VALIDATION_ERROR",
-                    "message": "Enviar únicamente sessionId como identificador válido."
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "JWT ausente, inválido, vencido o usuario inexistente.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "example": {
-                  "error": {
-                    "code": "UNAUTHORIZED",
-                    "message": "Usuario no autorizado."
+                    "code": "INTERNAL_ERROR",
+                    "message": "request entity too large"
                   }
                 }
               }
             }
           },
           "500": {
-            "description": "Falla de lectura o escritura; la reserva no se confirma.",
+            "description": "Falla al leer o escribir el archivo de reservas; la reserva no se confirma.",
             "content": {
               "application/json": {
                 "schema": {
@@ -915,21 +1232,7 @@
               }
             }
           }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateReservation"
-              },
-              "example": {
-                "sessionId": "palermo-1-2030-01-07-0900"
-              }
-            }
-          }
-        },
-        "description": "Usar un sessionId obtenido de GET /api/sessions. Solo reservas CONFIRMED ocupan cupos o bloquean horarios. No se permite superposición para el mismo usuario, incluso entre sedes. Intervalos consecutivos permitidos."
+        }
       }
     },
     "/api/reservations/me": {
@@ -939,6 +1242,7 @@
         ],
         "operationId": "listMyReservations",
         "summary": "Consultar mis reservas",
+        "description": "Devuelve únicamente las reservas del usuario del JWT, confirmadas y canceladas, ordenadas por inicio de sesión y luego por fecha de creación. No admite userId ni otros filtros.",
         "security": [
           {
             "bearerAuth": []
@@ -946,17 +1250,59 @@
         ],
         "responses": {
           "200": {
-            "description": "Incluye confirmadas y canceladas, con la sesión y sus cupos actuales.",
+            "description": "Reservas del usuario, con la sesión y sus cupos actuales.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReservationsResponse"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "9f2b1f1e-7c4a-4d28-9a35-1f0c6b8e2d41",
+                      "userId": "user-demo",
+                      "sessionId": "palermo-1-2030-01-07-0900",
+                      "status": "CONFIRMED",
+                      "createdAt": 1893964800000,
+                      "cancelledAt": null,
+                      "session": {
+                        "id": "palermo-1-2030-01-07-0900",
+                        "branchId": "palermo",
+                        "activityId": "palermo-1",
+                        "startsAt": 1894017600000,
+                        "endsAt": 1894021200000,
+                        "capacity": 20,
+                        "confirmedCount": 3,
+                        "remainingCapacity": 17,
+                        "bookable": true
+                      }
+                    },
+                    {
+                      "id": "9f2b1f1e-7c4a-4d28-9a35-1f0c6b8e2d41",
+                      "userId": "user-demo",
+                      "sessionId": "palermo-1-2030-01-07-1800",
+                      "status": "CANCELLED",
+                      "createdAt": 1893964800000,
+                      "cancelledAt": 1893965400000,
+                      "session": {
+                        "id": "palermo-1-2030-01-07-1800",
+                        "branchId": "palermo",
+                        "activityId": "palermo-1",
+                        "startsAt": 1894050000000,
+                        "endsAt": 1894053600000,
+                        "capacity": 20,
+                        "confirmedCount": 0,
+                        "remainingCapacity": 20,
+                        "bookable": true
+                      }
+                    }
+                  ]
                 }
               }
             }
           },
           "400": {
-            "description": "Identificadores, filtros o cuerpo inválidos. No se acepta userId.",
+            "description": "Se envió cualquier parámetro de consulta.",
             "content": {
               "application/json": {
                 "schema": {
@@ -965,7 +1311,7 @@
                 "example": {
                   "error": {
                     "code": "VALIDATION_ERROR",
-                    "message": "Enviar únicamente sessionId como identificador válido."
+                    "message": "Este endpoint no admite filtros."
                   }
                 }
               }
@@ -978,17 +1324,40 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 },
-                "example": {
-                  "error": {
-                    "code": "UNAUTHORIZED",
-                    "message": "Usuario no autorizado."
+                "examples": {
+                  "sinToken": {
+                    "summary": "Falta el encabezado Authorization",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Se requiere un token Bearer."
+                      }
+                    }
+                  },
+                  "tokenInvalido": {
+                    "summary": "Token mal formado, firmado con otra clave o vencido",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Token inválido o vencido."
+                      }
+                    }
+                  },
+                  "usuarioInexistente": {
+                    "summary": "El token es válido pero el usuario ya no existe",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Usuario no autorizado."
+                      }
+                    }
                   }
                 }
               }
             }
           },
           "500": {
-            "description": "Falla de lectura o escritura; la reserva no se confirma.",
+            "description": "Falla al leer el archivo de reservas.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1003,8 +1372,7 @@
               }
             }
           }
-        },
-        "description": "No admite userId ni otros filtros. Solo devuelve las reservas del usuario autenticado, ordenadas por inicio de sesión."
+        }
       }
     },
     "/api/reservations/{id}/cancel": {
@@ -1014,24 +1382,114 @@
         ],
         "operationId": "cancelReservation",
         "summary": "Cancelar mi reserva",
+        "description": "Se envía sin cuerpo o con un objeto vacío. Libera el cupo en el momento. La operación es idempotente: repetirla devuelve 200 sin modificar cancelledAt. La reserva cancelada queda en el historial; para volver a la sesión hay que crear una reserva nueva.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador de la reserva (UUID devuelto al crearla).",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,127}$"
+            },
+            "example": "9f2b1f1e-7c4a-4d28-9a35-1f0c6b8e2d41"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Cancelada; repetir la operación es idempotente y no cambia cancelledAt.",
+            "description": "Reserva cancelada y cupo liberado.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReservationResponse"
+                },
+                "example": {
+                  "data": {
+                    "id": "9f2b1f1e-7c4a-4d28-9a35-1f0c6b8e2d41",
+                    "userId": "user-demo",
+                    "sessionId": "palermo-1-2030-01-07-0900",
+                    "status": "CANCELLED",
+                    "createdAt": 1893964800000,
+                    "cancelledAt": 1893965400000,
+                    "session": {
+                      "id": "palermo-1-2030-01-07-0900",
+                      "branchId": "palermo",
+                      "activityId": "palermo-1",
+                      "startsAt": 1894017600000,
+                      "endsAt": 1894021200000,
+                      "capacity": 20,
+                      "confirmedCount": 3,
+                      "remainingCapacity": 17,
+                      "bookable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identificador inválido o cuerpo con propiedades.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Identificador inválido o cuerpo no vacío."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT ausente, inválido, vencido o usuario inexistente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "sinToken": {
+                    "summary": "Falta el encabezado Authorization",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Se requiere un token Bearer."
+                      }
+                    }
+                  },
+                  "tokenInvalido": {
+                    "summary": "Token mal formado, firmado con otra clave o vencido",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Token inválido o vencido."
+                      }
+                    }
+                  },
+                  "usuarioInexistente": {
+                    "summary": "El token es válido pero el usuario ya no existe",
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Usuario no autorizado."
+                      }
+                    }
+                  }
                 }
               }
             }
           },
           "404": {
-            "description": "No existe o no pertenece al usuario autenticado.",
+            "description": "La reserva no existe o pertenece a otro usuario.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1047,7 +1505,7 @@
             }
           },
           "409": {
-            "description": "No se permite cancelar reservas confirmadas cuya sesión ya comenzó.",
+            "description": "La reserva está confirmada y su sesión ya comenzó.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1062,8 +1520,8 @@
               }
             }
           },
-          "400": {
-            "description": "Identificadores, filtros o cuerpo inválidos. No se acepta userId.",
+          "413": {
+            "description": "El cuerpo supera 16 KB.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1071,31 +1529,15 @@
                 },
                 "example": {
                   "error": {
-                    "code": "VALIDATION_ERROR",
-                    "message": "Enviar únicamente sessionId como identificador válido."
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "JWT ausente, inválido, vencido o usuario inexistente.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "example": {
-                  "error": {
-                    "code": "UNAUTHORIZED",
-                    "message": "Usuario no autorizado."
+                    "code": "INTERNAL_ERROR",
+                    "message": "request entity too large"
                   }
                 }
               }
             }
           },
           "500": {
-            "description": "Falla de lectura o escritura; la reserva no se confirma.",
+            "description": "Falla al leer o escribir el archivo de reservas; la cancelación no se aplica.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1110,19 +1552,7 @@
               }
             }
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Identificador devuelto por la API."
-          }
-        ],
-        "description": "Sin cuerpo o con objeto vacío. Libera el cupo inmediatamente. Una reserva cancelada permanece en el historial; volver a reservar crea otra reserva."
+        }
       }
     }
   },
@@ -1143,10 +1573,14 @@
             "type": "object",
             "properties": {
               "code": {
-                "type": "string"
+                "type": "string",
+                "description": "Código estable, pensado para que el cliente ramifique.",
+                "example": "VALIDATION_ERROR"
               },
               "message": {
-                "type": "string"
+                "type": "string",
+                "description": "Texto en español, apto para mostrar al usuario.",
+                "example": "Sesión no encontrada."
               }
             },
             "required": [
@@ -1157,7 +1591,8 @@
         },
         "required": [
           "error"
-        ]
+        ],
+        "description": "Formato único de error de la API."
       },
       "User": {
         "type": "object",
@@ -1181,7 +1616,8 @@
           },
           "phone": {
             "type": "string",
-            "example": "+54 11 1234 5678"
+            "example": "+54 11 1234 5678",
+            "description": "Cadena vacía si el perfil no tiene teléfono cargado."
           }
         },
         "required": [
@@ -1190,7 +1626,8 @@
           "lastName",
           "email",
           "phone"
-        ]
+        ],
+        "description": "Perfil público; nunca incluye el hash de la contraseña."
       },
       "LoginRequest": {
         "type": "object",
@@ -1198,13 +1635,16 @@
           "email": {
             "type": "string",
             "format": "email",
-            "maxLength": 254
+            "maxLength": 254,
+            "description": "Se normaliza a minúsculas y se recortan espacios.",
+            "example": "demo@sportclub.com"
           },
           "password": {
             "type": "string",
             "format": "password",
             "minLength": 1,
-            "maxLength": 128
+            "maxLength": 128,
+            "example": "SportClub123!"
           }
         },
         "required": [
@@ -1338,10 +1778,12 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "example": "palermo-1"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "example": "Yoga"
           },
           "description": {
             "type": "string"
@@ -1367,19 +1809,23 @@
           "description",
           "days",
           "times"
-        ]
+        ],
+        "description": "Clase de una sede; su id es el activityId de las sesiones."
       },
       "Venue": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "example": "palermo"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "example": "SportClub Palermo"
           },
           "address": {
-            "type": "string"
+            "type": "string",
+            "example": "Av. Santa Fe 4500, CABA"
           },
           "location": {
             "$ref": "#/components/schemas/Location"
@@ -1408,7 +1854,8 @@
           "description",
           "openingHours",
           "classes"
-        ]
+        ],
+        "description": "Sede; su id es el branchId de las sesiones."
       },
       "VenueResponse": {
         "type": "object",
@@ -1450,43 +1897,58 @@
         ],
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "example": "palermo-1-2030-01-07-0900",
+            "description": "Identificador estable con el formato actividad-fecha-hora.",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,127}$"
           },
           "branchId": {
             "type": "string",
-            "description": "ID de sede existente (venues.json)."
+            "description": "ID de sede existente (venues.json).",
+            "example": "palermo"
           },
           "activityId": {
             "type": "string",
-            "description": "ID de clase existente dentro de la sede."
+            "description": "ID de clase existente dentro de la sede.",
+            "example": "palermo-1"
           },
           "startsAt": {
             "type": "integer",
             "format": "int64",
-            "description": "Timestamp Unix en milisegundos UTC; inicio inclusivo."
+            "description": "Timestamp Unix en milisegundos UTC; inicio inclusivo.",
+            "example": 1894017600000
           },
           "endsAt": {
             "type": "integer",
             "format": "int64",
-            "description": "Timestamp Unix en milisegundos UTC; fin exclusivo."
+            "description": "Timestamp Unix en milisegundos UTC; fin exclusivo.",
+            "example": 1894021200000
           },
           "capacity": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 1,
+            "example": 20,
+            "description": "Cupos totales de la sesión."
           },
           "confirmedCount": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "example": 3,
+            "description": "Reservas CONFIRMED de la sesión."
           },
           "remainingCapacity": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "example": 17,
+            "description": "capacity menos confirmedCount."
           },
           "bookable": {
             "type": "boolean",
-            "description": "Todavía no comenzó y tiene cupos. No evalúa duplicados ni conflictos del usuario."
+            "description": "Todavía no comenzó y tiene cupos. No evalúa duplicados ni conflictos del usuario.",
+            "example": true
           }
-        }
+        },
+        "description": "Sesión agendada de una clase, con la disponibilidad calculada al momento de la consulta."
       },
       "Reservation": {
         "type": "object",
@@ -1502,37 +1964,46 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "example": "9f2b1f1e-7c4a-4d28-9a35-1f0c6b8e2d41"
           },
           "userId": {
             "type": "string",
-            "description": "Identidad del JWT, nunca provista por el cliente."
+            "description": "Identidad del JWT, nunca provista por el cliente.",
+            "example": "user-demo"
           },
           "sessionId": {
-            "type": "string"
+            "type": "string",
+            "example": "palermo-1-2030-01-07-0900"
           },
           "status": {
             "type": "string",
             "enum": [
               "CONFIRMED",
               "CANCELLED"
-            ]
+            ],
+            "description": "CONFIRMED ocupa cupo y bloquea horarios; CANCELLED queda en el historial.",
+            "example": "CONFIRMED"
           },
           "createdAt": {
             "type": "integer",
             "format": "int64",
-            "description": "Timestamp Unix en milisegundos UTC."
+            "description": "Timestamp Unix en milisegundos UTC.",
+            "example": 1893964800000
           },
           "cancelledAt": {
             "type": "integer",
             "format": "int64",
             "description": "Timestamp de cancelación; null mientras está confirmada.",
-            "nullable": true
+            "nullable": true,
+            "example": null
           },
           "session": {
-            "$ref": "#/components/schemas/SessionAvailability"
+            "$ref": "#/components/schemas/SessionAvailability",
+            "description": "Estado de la sesión al momento de la respuesta."
           }
-        }
+        },
+        "description": "Reserva del usuario autenticado, con la sesión embebida."
       },
       "SessionResponse": {
         "type": "object",
@@ -1592,10 +2063,13 @@
         "properties": {
           "sessionId": {
             "type": "string",
-            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,127}$"
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,127}$",
+            "description": "Identificador devuelto por GET /api/sessions.",
+            "example": "palermo-1-2030-01-07-0900"
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Única propiedad admitida; el usuario se toma del JWT."
       }
     }
   }

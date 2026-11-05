@@ -27,6 +27,8 @@ Usuario de prueba: `demo@sportclub.com` / `SportClub123!`.
 | GET | `/api/venues` | Público | Dos sedes, con dos clases cada una |
 | GET | `/api/venues/:id` | Público | Detalle de sede |
 
+Las rutas de sesiones y reservas se documentan en [Endpoints de reservas](#endpoints-de-reservas).
+
 ```sh
 curl -X POST http://localhost:3000/api/auth/login \
   -H 'Content-Type: application/json' \
