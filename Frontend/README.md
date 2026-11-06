@@ -1,160 +1,175 @@
 # SportClub Mobile
 
-Base limpia con Expo SDK 58, TypeScript y Expo Router.
+Aplicación para consultar las sedes de SportClub, reservar clases, revisar las próximas reservas y editar el perfil. Está desarrollada con Expo SDK 58, React Native, TypeScript, Expo Router y Zustand.
 
-## Ejecutar
+## Instalación y desarrollo
 
-Desde `Frontend/`:
+Usá Node.js 22 LTS actualizado y npm. Desde esta carpeta:
 
 ```sh
-npm install
+npm ci
 npm start
 ```
 
-`npm run android`, `npm run ios` y `npm run web` abren cada plataforma. Para comprobar el código: `npm run typecheck` y `npm run lint`.
-
-## Organización
-
-- `src/app/`: rutas y layouts. Login separado de las pestañas Inicio, Sedes y Perfil.
-- `src/features/auth/`: acceso y futura autenticación.
-- `src/features/reservations/`: Home y futuras reservas.
-- `src/features/venues/`: listado y detalle de sedes.
-- `src/features/profile/`: perfil del usuario.
-- `src/components/`: componentes compartidos.
-- `src/hooks/`: hooks compartidos.
-- `src/stores/`: futuros stores de Zustand para sesión y reservas.
-- `src/services/`: futuros adaptadores HTTP y almacenamiento.
-- `src/data/`: futuros datos locales para la APK autónoma.
-- `src/theme/`: colores y espaciado compartidos.
-- `src/types/`: tipos compartidos entre funcionalidades.
-- `src/utils/`: utilidades generales.
-- `assets/`: iconos y recursos estáticos.
-
-Las carpetas todavía vacías incluyen `.gitkeep` para conservarlas en Git. Las rutas delegan en pantallas de cada funcionalidad. El login valida las credenciales demo localmente y guarda el usuario en Zustand. Las pestañas están protegidas con Stack.Protected; cerrar sesión desde Perfil vuelve al login. Las reservas y la edición de perfil todavía están pendientes.
-
-Se quitaron la pantalla Explore, los componentes de tutorial, la animación de bienvenida y el script de reset de la plantilla. Se mantienen los iconos configurados y las dependencias existentes, incluyendo Zustand y la barra curva agregada previamente.
-
-La variable opcional `EXPO_PUBLIC_API_URL` está documentada en `.env.example`; todavía no la consume ningún servicio. No guardar secretos en variables `EXPO_PUBLIC_*`.
-
-## Login local
-
-Usuario: `demo@sportclub.com`. Contraseña: `SportClub123!`.
-
-Funciona sin backend ni conexión. El email se normaliza a minúsculas y se recortan sus espacios externos; la contraseña se compara exactamente. Se muestran errores para email inválido, contraseña vacía y credenciales incorrectas.
-
-La sesión se mantiene en memoria mientras la app está abierta; al reiniciar se vuelve a pedir login. No se guarda la contraseña ingresada ni se genera un JWT ficticio. Las credenciales incluidas son públicas y exclusivas de la demostración. Las demás credenciales se autentican contra el backend y su JWT se mantiene en memoria.
-
-## Barra de navegación curva
-
-La barra muestra Inicio a la izquierda, Escanear QR como acción central y Perfil a la derecha. Mantiene los eventos de pestañas, el historial y las rutas protegidas de Expo Router.
-
-Se reutilizan el generador de curva y el componente SVG de `react-native-curved-bottom-bar` 3.5.1. Su navegador completo utiliza paquetes externos de React Navigation, incompatibles con el contexto de Expo Router de SDK 58. Por eso la navegación sigue a cargo de Expo Router y los imports internos de la librería están aislados en `src/components/navigation/curved-bar-background.tsx`. La versión se fija porque esas subrutas no son API pública; revisar este adaptador antes de actualizarla.
-
-La barra reserva su espacio bajo el contenido y contempla el área segura inferior. No aparece en el login.
-
-## QR de sedes
-
-El botón circular central es una acción de escaneo, como en RI Monitoreo: abre la cámara en una pantalla modal, sin seleccionar una pestaña. Se piden permisos al tocar Permitir cámara. Un QR válido cierra el escáner y abre la sede; uno inválido muestra un error y permite reintentar. La cámara se desmonta al salir, perder foco o pasar la app a segundo plano.
-
-Contenidos admitidos: `sportclubchallenge://venues/palermo`, `sportclubchallenge://venues/belgrano`, o los identificadores `palermo` y `belgrano`. El formato se valida contra las sedes locales; no abre URLs arbitrarias. El listado también está disponible desde Inicio y desde Ver sedes sin escanear.
-
-La cámara requiere un dispositivo físico; el simulador muestra una explicación y permite consultar las sedes. Expo Go incluye expo-camera. Si usás una compilación propia, es necesario reconstruirla tras incorporar este módulo y su configuración de permisos.
-
-QR de ejemplo para escanear desde otro dispositivo: `assets/qr/palermo.png` y `assets/qr/belgrano.png`.
-
-## Errores del login
-
-La sesión y el usuario se comparten con Zustand; campos, validaciones y estado de envío permanecen locales al formulario. `AuthError` distingue validaciones de credenciales incorrectas, sin comparar textos de excepciones.
-
-- Campos vacíos, correo inválido o contraseña de más de 128 caracteres: errores específicos junto al campo, foco en el primero inválido y anuncio de accesibilidad.
-- Credenciales incorrectas: alerta nativa con acción Revisar datos; nunca indica si el email existe. En web se presenta un mensaje accesible dentro del formulario.
-- Errores inesperados: mensaje genérico; no se muestra la excepción técnica ni se descartan los datos ingresados.
-- Envíos repetidos: guarda síncrona y controles bloqueados durante el intento. El login local no introduce demoras artificiales; al tener éxito la navegación protegida muestra Inicio.
-
-Al consultar la API también se clasifican fallos de red, timeout de 10 segundos, credenciales inválidas, límite de intentos (429), errores 5xx, sesión vencida y respuestas malformadas. No se muestran mensajes técnicos devueltos por Axios o por el servidor. No se usa una alerta de éxito, ya que el cambio de pantalla confirma el ingreso.
-
-Pruebas de validación y clasificación de errores: `npm run test:auth` (Node.js 22.6 o superior con soporte para strip-types).
-
-En Cuenta de prueba, cada dato tiene a su derecha un botón con el ícono Feather/copy. Copia únicamente el email o la contraseña correspondiente para pegarlo en su campo; muestra confirmación o error y no autocompleta el formulario. Las credenciales se definen en un único lugar del servicio de autenticación.
-
-
-## Integración local con Axios
-
-En dos terminales, desde la raíz del repositorio:
+Para abrir una compilación nativa en Android:
 
 ```sh
-cd Backend
-npm install
-# Configurar .env según Backend/.env.example si todavía no existe.
-npm start
+npm run android -- --device
 ```
 
+Este comando necesita Android Studio y el SDK configurados, además de un emulador o un teléfono con depuración USB. `npm run ios` compila la app en iOS y requiere macOS y Xcode. `npm run web` inicia la versión web.
+
+También podés usar Expo Go si su versión es compatible con el SDK del proyecto. Las compilaciones de desarrollo cargan el JavaScript desde Metro, que debe permanecer en ejecución.
+
+## Acceso demo y acceso por API
+
+La cuenta demo es:
+
+```text
+demo@sportclub.com
+SportClub123!
+```
+
+Solo esa combinación ingresa de forma local. El correo se normaliza a minúsculas y se recortan sus espacios externos; la contraseña se compara exactamente. No hay un selector de modo.
+
+La demo permite reservar, cancelar y editar el perfil sin backend. Los stores conservan esos cambios durante la sesión. Al cerrar sesión o reiniciar la app, el usuario y los ejemplos de reservas vuelven a su estado inicial. Editar el correo demo no cambia las credenciales originales.
+
+Cualquier otra combinación válida se envía a la API con Axios. El ingreso realiza `POST /auth/login` y luego `GET /users/me` con el token recibido. La sesión se confirma solo si ambos pasos son correctos. Si el servidor falla, se informa el error y no se concede acceso demo.
+
+Para probar este flujo con la API de Render, usá:
+
+```text
+Correo: nuevo-1793942685@sportclub.com
+Contraseña: UnaClaveSegura1
+```
+
+Configurá `EXPO_PUBLIC_API_URL=https://sportclub-challenge-fernando-marina.onrender.com/api` como se explica en la siguiente sección. Esta cuenta requiere internet y guarda los cambios en el backend. Es una cuenta compartida de prueba; no ingreses datos personales. Si se modifica su correo desde Perfil, el siguiente ingreso debe usar el nuevo correo.
+
+También podés crear otra cuenta en la API con `POST /api/auth/register`. La app no incluye una pantalla de registro. La cuenta demo del servidor puede probarse directamente por HTTP, pero esas mismas credenciales dentro de la app activan el modo local.
+
+## Configurar la API
+
+Copiá el archivo de ejemplo y ajustá la dirección según tu entorno:
+
 ```sh
-cd Frontend
-npm install
 cp .env.example .env
-npm start -- --clear
 ```
 
-El archivo `.env` del frontend está excluido de Git. Para usar el backend:
+Para usar el backend desplegado:
 
 ```dotenv
-EXPO_PUBLIC_API_URL=http://localhost:3000/api
+EXPO_PUBLIC_API_URL=https://sportclub-challenge-fernando-marina.onrender.com/api
 ```
 
-- iOS Simulator y navegador en la Mac: `http://localhost:3000/api`.
-- Android Emulator: `http://10.0.2.2:3000/api`.
-- Teléfono físico: `http://IP_LAN_DE_LA_MAC:3000/api`, conectado a la misma red. `localhost` en el teléfono apunta al propio teléfono.
+Para usar un backend local en el puerto 3000:
 
-Reiniciar Expo y recargar completamente la app al cambiar el entorno. No poner el secreto JWT del backend en el frontend.
+| Entorno | URL |
+| --- | --- |
+| Web o simulador iOS en la misma computadora | `http://localhost:3000/api` |
+| Emulador estándar de Android Studio | `http://10.0.2.2:3000/api` |
+| Teléfono en la misma red | `http://IP_LAN_DE_TU_COMPUTADORA:3000/api` |
+| Android por USB con `adb reverse tcp:3000 tcp:3000` | `http://localhost:3000/api` |
 
-### Flujo y estado
+Sin esta variable, los servicios usan `http://localhost:3000/api`. En un teléfono, localhost apunta al teléfono, salvo que configures el reenvío por USB.
 
-1. El formulario valida email y contraseña y espera `await signIn(...)`; permanece bloqueado hasta que termina.
-2. `api-auth-service.ts` envía `POST /auth/login` con Axios.
-3. Con el JWT recibido, consulta `GET /users/me` usando `Authorization: Bearer ...`. No confirma el ingreso si este paso falla.
-4. `auth-store.ts` publica la sesión completa en Zustand, de forma que Inicio y Perfil usan el usuario persistido del servidor.
-5. Cerrar sesión elimina usuario y JWT de memoria. Al vencer el plazo informado por el servidor se cierra la sesión; también se comprueba al volver del segundo plano. Una respuesta de login que llegue después de cerrar sesión no vuelve a autenticar al usuario.
+Reiniciá Expo y recargá completamente la app después de modificar `.env`. Para una release, generá otra APK: las variables públicas se incorporan al JavaScript durante la compilación. El archivo `.env` no se sube a Git y nunca debe contener el secreto JWT del backend. Los valores `EXPO_PUBLIC_*` son visibles en la aplicación compilada.
 
-El cliente Axios tiene timeout de 10 segundos y no reintenta automáticamente el login. El token se pasa explícitamente a la solicitud protegida, sin guardarlo en headers globales ni persistirlo en disco. Reiniciar la aplicación pide login nuevamente. No se agrega refresh token ni revocación; al cerrar sesión se descarta la copia del cliente.
+## Pantallas y flujo
 
-### APK autónoma
+- **Login:** valida correo y contraseña, permite mostrar u ocultar la clave e informa errores sin borrar lo ingresado.
+- **Inicio:** muestra el nombre del usuario, la próxima clase, el acceso a Sedes y las demás reservas próximas. En demo incluye un aviso compacto.
+- **Sedes:** muestra las dos sedes del JSON local. Cada tarjeta abre su información y el selector de clases.
+- **Reserva:** permite elegir actividad, fecha y horario, revisar los datos y confirmar. La alerta de éxito ofrece ir a Mis reservas o seguir explorando.
+- **Mis reservas:** muestra reservas confirmadas y canceladas. La cancelación requiere confirmación y actualiza las pantallas que usan el mismo store.
+- **Perfil:** muestra los datos del usuario, permite editarlos, consultar las reservas y cerrar sesión.
+- **Escáner QR:** abre la cámara y lleva al detalle de la sede identificada. Incluye manejo de permisos, QR inválidos y reintentos.
 
-La cuenta demo permite ingresar sin servidor ni conexión, sin configuración adicional y sin JWT ficticio. Cualquier otra combinación de credenciales requiere la API; un fallo de red no concede acceso local.
+Los horarios se muestran en la zona de Buenos Aires. Inicio incluye las reservas confirmadas que todavía no terminaron, por lo que también puede mostrar una clase en curso.
 
+## Estado y organización del código
 
-La autenticación y el perfil se integran con la API. El flujo de reservas usa Zustand, con funcionamiento local para demo y servicios HTTP para cuentas API; ver Reservas compartidas con Zustand.
+```text
+src/
+  app/          Rutas y layouts de Expo Router
+  features/     Pantallas, componentes y lógica de cada funcionalidad
+  components/   Componentes compartidos
+  stores/       Sesión y reservas en Zustand
+  services/     Clientes Axios, validación y servicios
+  data/         Sedes y actividades locales
+  theme/        Colores, espaciado y tema de navegación
+  types/        Tipos compartidos
+```
 
-### Pruebas
+`auth-store` conserva usuario, token, origen de la sesión y vencimiento. `reservations-store` conserva horarios, reservas, errores y operaciones pendientes. Los formularios, la fecha elegida y la revisión previa a reservar usan estado local de React.
 
-`npm run test:auth` ejecuta pruebas de validaciones, transporte HTTP con Axios, timeout, respuestas inválidas, JWT en solicitudes protegidas y consistencia de Zustand. Los tests HTTP usan servidores locales temporales y no cambian los datos del backend de desarrollo.
+El perfil demo se valida y normaliza antes de actualizar el usuario en Zustand. Se conserva su identificador, por lo que editarlo no borra sus reservas. Para cuentas API, el perfil se actualiza con `PATCH /users/me` y se publica en el store después de la confirmación del servidor.
 
+La sesión y las reservas demo no se persisten en disco. En las cuentas API, las reservas y el perfil quedan guardados en el backend, pero el token solo vive en memoria: reiniciar la app requiere ingresar nuevamente. El vencimiento del token se comprueba durante la sesión y al volver del segundo plano.
 
-## Contraseña y acceso demo autónomo
+## Gestión de reservas
 
-El ojo junto a la contraseña alterna entre mostrarla y ocultarla; no cambia su valor. La contraseña se oculta inicialmente y al volver al login tras cerrar sesión.
+Las sedes y actividades salen de `src/data/venues.json`. Para la demo se generan horarios para los próximos 14 días y se cargan reservas de ejemplo al inicializar la sesión.
 
+El store impide reservar una clase ya comenzada, duplicar una reserva confirmada o elegir un horario que se superponga con otra reserva. Dos clases consecutivas son válidas. Una reserva cancelada deja de bloquear el horario y puede volver a reservarse si sigue disponible.
 
-### Selección automática del acceso
+Para cuentas API se consultan las sesiones y las reservas del usuario. Las altas y cancelaciones se publican después de la respuesta del backend, que decide la disponibilidad y los conflictos. Las respuestas tardías de una sesión cerrada no restauran datos de ese usuario.
 
-El formulario no tiene selector de modo. Al ingresar `demo@sportclub.com` con `SportClub123!`, autentica localmente y no hace solicitudes HTTP. El email se normaliza (minúsculas y espacios externos), pero la contraseña debe coincidir exactamente. Con cualquier otra combinación válida se usa Axios y el backend, incluso si el email es el de demo pero la contraseña no coincide. Campos inválidos se rechazan antes de consultar el servidor.
+La barra inferior usa Expo Router para navegar. El botón central abre el escáner como una acción, sin seleccionar la sección Sedes. El listado de sedes se abre desde Inicio o desde la alternativa del escáner.
 
-El ojo para mostrar y ocultar la contraseña y los íconos de copia permanecen disponibles. No se genera una APK con este cambio.
+Para dibujar la barra se reutiliza el SVG de `react-native-curved-bottom-bar`, sin usar su navegador. El adaptador está aislado en `src/components/navigation/curved-bar-background.tsx`; usa subrutas internas de la librería, por lo que hay que revisarlo antes de actualizar su versión.
 
+## APK Android sin Metro
 
-## Editar información personal
+Con Android Studio, Java y el SDK configurados, conectá un teléfono por USB y habilitá la depuración. Desde esta carpeta:
 
-Perfil → Editar información personal permite cambiar nombre, apellido y correo. `PATCH /api/users/me` requiere JWT, recorta espacios, normaliza el email y rechaza correos duplicados (409). La respuesta confirmada actualiza únicamente `user` en Zustand; conserva token y vencimiento. Cancelar antes de guardar descarta el formulario. Salir durante una solicitud no revierte una escritura ya enviada; una respuesta tardía nunca restaura una sesión cerrada.
+```sh
+npx expo run:android --variant release --device
+```
 
-La cuenta demo permite editar nombre, apellido y correo sin conexión. Los datos se validan y normalizan, y se actualizan en Zustand: Perfil e Inicio muestran los cambios de inmediato. Se conserva el identificador del usuario para mantener las reservas de la sesión. No se envía HTTP ni se crea un JWT. Los cambios duran hasta cerrar sesión o reiniciar la app; las credenciales demo originales siguen siendo las de ingreso. Para probar persistencia en el servidor, ingresar con una cuenta del backend (distinta de la combinación demo local). En Android configurar `EXPO_PUBLIC_API_URL` con una dirección accesible desde el dispositivo; por ejemplo `http://10.0.2.2:3000/api` para el emulador estándar, o la IP LAN del equipo para un dispositivo físico.
+El comando genera la carpeta nativa si no existe, compila e instala la app. La APK queda en `android/app/build/outputs/apk/release/app-release.apk` e incluye el JavaScript: después de instalarla podés cerrar Metro y desconectar el cable.
 
-Verificaciones: `npm run test:auth`, `npm run typecheck`, `npm run lint` en Frontend; `npm test` en Backend. Prueba manual Android: ingresar con JWT, editar cada campo, guardar y comprobar Perfil; repetir ingreso usando el nuevo correo; probar cancelar, correo duplicado, error de red, botón Atrás y cerrar sesión. La sesión permanece en memoria, como antes.
+Si ya tenés la APK, podés instalarla con:
 
+```sh
+adb install -r android/app/build/outputs/apk/release/app-release.apk
+```
 
-## Reservas compartidas con Zustand
+La release local actual usa la firma de desarrollo y sirve para probar y entregar el challenge. Para una publicación en tiendas hay que configurar una firma de distribución. La configuración de EAS está en `eas.json`; las carpetas `android/` e `ios/` son generadas y están excluidas de Git.
 
-`useReservationsStore` centraliza sesiones, reservas, carga, errores y operaciones pendientes. Sedes permite reservar un horario; Home muestra las reservas confirmadas que no finalizaron; Perfil → Mis reservas incluye el historial y permite cancelar. Todas las pantallas observan el mismo estado.
+Verificá la demo con modo avión: ingreso, reservas, cancelación y edición de perfil. El avatar se obtiene de un servicio remoto y puede no cargar sin conexión; las operaciones locales no dependen de él.
 
-La cuenta demo carga ejemplos una sola vez por sesión y permite crear/cancelar reservas locales sin HTTP. Los horarios se generan para los próximos 14 días con el catálogo local (Buenos Aires); la validación rechaza duplicados, clases comenzadas y solapamientos usando `inicioA < finB && inicioB < finA`. Las clases consecutivas se permiten. El estado es en memoria: se limpia al salir o reiniciar, igual que la autenticación; los ejemplos se inicializan al volver a entrar.
+## QR y deep links
 
-Con una sesión API, el store consulta sesiones y reservas, y solo publica altas/cancelaciones confirmadas por el backend, que sigue siendo la autoridad para cupos y conflictos. Las respuestas tardías después de cerrar sesión se descartan. No se usan datos demo como reemplazo ante errores del servidor. No se requiere instalar dependencias nuevas.
+Abrí alguno de estos códigos en otra pantalla y escanealo desde el botón central:
+
+- [QR de Palermo](assets/qr/palermo.png)
+- [QR de Belgrano](assets/qr/belgrano.png)
+
+El lector admite los identificadores `palermo` y `belgrano`, y las URLs `sportclubchallenge://venues/palermo` y `sportclubchallenge://venues/belgrano`. Un código de una sede desconocida o de otro contenido muestra un error y permite volver a intentar. No abre URLs arbitrarias.
+
+Para probar un deep link por USB, con la app instalada y la sesión iniciada:
+
+```sh
+adb shell am start -W \
+  -a android.intent.action.VIEW \
+  -d "sportclubchallenge://venues/palermo" \
+  com.fernandommarina.SportClubChallenge
+```
+
+Debe abrir el detalle de Palermo. Si Android indica que entregó el intent a la instancia actual, la app ya estaba abierta; eso no es un error. Confirmá también que la pantalla haya cambiado.
+
+Las rutas están protegidas por el login. Si reiniciás por completo la app, la sesión se pierde y el enlace puede llevar al ingreso; no se implementó la recuperación del destino original después de autenticarse. Los permisos de cámara y los deep links deben verificarse en una compilación nativa. El escaneo se prueba en un teléfono con cámara.
+
+## Pruebas y comprobaciones
+
+```sh
+npm run typecheck
+npm run test:auth
+npm run lint
+```
+
+Aunque se llama `test:auth`, el comando ejecuta todos los archivos de `test/`: autenticación, edición local y por API, reservas y reglas de horarios. Usa servidores HTTP temporales y no modifica datos del backend de desarrollo ni de Render.
+
+El lint completo tiene incidencias conocidas en los tests: referencias a `Buffer` sin declarar y el parseo de un import con atributos. Se pueden revisar las fuentes por separado con `npx eslint src --no-cache`. Esto no reemplaza la corrección pendiente del lint de los tests.
+
+Para una revisión manual, probá errores de credenciales, permisos de cámara denegados, un QR inválido, reservas duplicadas o superpuestas, cancelación y edición de perfil sin conexión. Para cuentas API, comprobá también la respuesta ante pérdida de conexión y sesión vencida.

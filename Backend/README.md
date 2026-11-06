@@ -1,183 +1,157 @@
 # SportClub API
 
-Base del backend del challenge: Node.js + Express, JWT y persistencia local en JSON. Requiere Node.js 22 o superior.
+API REST del challenge, desarrollada con Node.js y Express. Permite iniciar sesión, consultar y editar el perfil, obtener las sedes y gestionar reservas. Usa JWT para autenticar las operaciones protegidas y archivos JSON para guardar los datos.
 
-## Ejecutar
+El backend funciona de forma independiente de la app. La integración mobile es opcional: la cuenta demo de la aplicación se resuelve localmente.
+
+## Instalación
+
+Necesitás Node.js 22 o superior y npm. Desde esta carpeta:
 
 ```sh
-npm install
+npm ci
 cp .env.example .env
-# Generá un secreto y reemplazá JWT_SECRET en .env:
+```
+
+Generá un secreto para firmar los tokens:
+
+```sh
 node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+```
+
+Copiá el resultado en `JWT_SECRET` dentro de `.env`, reemplazando el valor de ejemplo. Después iniciá el servidor:
+
+```sh
 npm run dev
 ```
 
-`npm start` inicia sin modo watch. El servidor escucha en el puerto 3000 por defecto y en todas las interfaces para permitir probar desde un teléfono en la misma red.
+`npm run dev` reinicia el proceso cuando cambia el código. `npm start` lo ejecuta sin ese seguimiento. El puerto por defecto es 3000.
 
-Usuario de prueba: `demo@sportclub.com` / `SportClub123!`.
+Para verificar el arranque:
 
-## Endpoints
+```sh
+curl http://localhost:3000/health
+```
 
-| Método | Ruta | Acceso | Descripción |
-| --- | --- | --- | --- |
-| GET | `/health` | Público | Estado del servidor |
-| POST | `/api/auth/login` | Público | Email y contraseña; devuelve JWT y usuario |
-| POST | `/api/auth/register` | Público | Crea la cuenta y devuelve la sesión iniciada |
-| GET | `/api/users/me` | Bearer JWT | Perfil autenticado |
-| PATCH | `/api/users/me` | Bearer JWT | Modifica firstName, lastName y phone |
-| GET | `/api/venues` | Público | Dos sedes, con dos clases cada una |
-| GET | `/api/venues/:id` | Público | Detalle de sede |
+La respuesta esperada es `{"status":"ok"}`.
 
-Las rutas de sesiones y reservas se documentan en [Endpoints de reservas](#endpoints-de-reservas).
+## Variables de entorno
+
+| Variable | Uso |
+| --- | --- |
+| `PORT` | Puerto HTTP. Por defecto, 3000. |
+| `JWT_SECRET` | Secreto de al menos 32 bytes para firmar los JWT. |
+| `CORS_ORIGIN` | Origen web permitido. Por defecto, `*`. |
+| `DATA_FILE` | Ruta del archivo de usuarios. Por defecto, `data/users.json`. |
+| `RESERVATIONS_FILE` | Ruta de sesiones y reservas. Por defecto, `reservations.json` en el mismo directorio que el archivo de usuarios. |
+
+Las rutas relativas se resuelven desde el directorio donde se inicia el proceso. Los archivos `.env` y `data/` están excluidos de Git. El secreto JWT es exclusivo del backend y no debe ponerse en variables públicas de Expo.
+
+CORS se aplica a navegadores; no reemplaza la autenticación de la API ni limita las solicitudes de una app nativa.
+
+## API desplegada y documentación
+
+- [Estado de la API en Render](https://sportclub-challenge-fernando-marina.onrender.com/health)
+- [Swagger en Render](https://sportclub-challenge-fernando-marina.onrender.com/api-docs/)
+- [Swagger local](http://localhost:3000/api-docs/)
+- [OpenAPI JSON local](http://localhost:3000/api-docs.json)
+
+La especificación está en `src/docs/openapi.json`. En Swagger podés ejecutar el login, copiar el token y pegarlo en Authorize, sin escribir el prefijo Bearer. Las consultas protegidas usan ese token.
+
+## Usuario de prueba y registro
+
+La primera vez que se crea el archivo de usuarios se carga esta cuenta:
+
+```text
+demo@sportclub.com
+SportClub123!
+```
+
+Sus datos se guardan en el archivo del servidor. Si se modifica su correo, el login posterior debe usar el nuevo valor. Esto es independiente de la cuenta demo local del frontend, que siempre usa las credenciales originales.
+
+Para probar Axios desde la app contra Render, está disponible esta cuenta compartida de prueba:
+
+```text
+Correo: nuevo-1793942685@sportclub.com
+Contraseña: UnaClaveSegura1
+```
+
+Corresponde al backend desplegado, no se crea automáticamente en un backend local. Requiere internet y la URL de Render configurada en el frontend. No ingreses datos personales: las modificaciones se guardan en esa cuenta compartida. Si se cambia su correo, cambia también el dato necesario para iniciar sesión.
+
+Para usar otra cuenta o probar un backend local, podés registrarla por API. No hay pantalla de registro en el frontend:
 
 ```sh
 curl -X POST http://localhost:3000/api/auth/register \
   -H 'Content-Type: application/json' \
-  -d '{"firstName":"Fernando","lastName":"Marina","email":"fernando@sportclub.com","password":"UnaClaveSegura1"}'
+  -d '{"firstName":"Fernando","lastName":"Marina","email":"fernando@example.com","password":"UnaClaveSegura1"}'
+```
 
+El registro responde con estado 201 y una sesión iniciada. El correo debe ser único y la contraseña tener entre 8 y 128 caracteres.
+
+## Endpoints
+
+Las rutas protegidas requieren `Authorization: Bearer TOKEN`.
+
+| Método | Ruta | Acceso | Resultado |
+| --- | --- | --- | --- |
+| GET | `/health` | Público | Estado del servidor |
+| POST | `/api/auth/login` | Público | Inicia sesión y devuelve JWT y usuario |
+| POST | `/api/auth/register` | Público | Crea una cuenta e inicia sesión |
+| GET | `/api/users/me` | JWT | Obtiene el perfil |
+| PATCH | `/api/users/me` | JWT | Actualiza nombre, apellido o correo |
+| GET | `/api/venues` | Público | Lista las dos sedes con sus actividades |
+| GET | `/api/venues/:id` | Público | Obtiene una sede |
+| GET | `/api/sessions` | JWT | Lista las sesiones futuras y los cupos |
+| GET | `/api/sessions/:id` | JWT | Obtiene una sesión, incluso si ya pasó |
+| POST | `/api/reservations` | JWT | Crea una reserva; responde 201 |
+| GET | `/api/reservations/me` | JWT | Lista las reservas propias, incluidas las canceladas |
+| PATCH | `/api/reservations/:id/cancel` | JWT | Cancela una reserva propia |
+
+El listado de sesiones permite filtrar por `branchId` y `activityId`. Incluye sesiones completas con `remainingCapacity: 0`. El campo `bookable` indica disponibilidad general; los conflictos del usuario se comprueban al reservar.
+
+Login y registro responden `{ token, tokenType, expiresIn, user }`. Las consultas y las operaciones de perfil y reservas usan `{ data }`. Los errores tienen la forma `{ error: { code, message } }`.
+
+Los códigos principales son 400 para datos inválidos, 401 para autenticación incorrecta, 404 para recursos inexistentes o reservas ajenas, 409 para conflictos y 429 para exceso de intentos. Login y registro tienen un límite de 20 solicitudes por IP cada 15 minutos, aplicado por separado.
+
+### Iniciar sesión y editar el perfil
+
+```sh
 curl -X POST http://localhost:3000/api/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"demo@sportclub.com","password":"SportClub123!"}'
+```
 
+Con el token de esa respuesta:
+
+```sh
 curl http://localhost:3000/api/users/me \
   -H 'Authorization: Bearer TOKEN_DEL_LOGIN'
 
 curl -X PATCH http://localhost:3000/api/users/me \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer TOKEN_DEL_LOGIN' \
-  -d '{"firstName":"Fernando","phone":"+54 11 1234 5678"}'
+  -d '{"firstName":"Fernando","lastName":"Marina","email":"fernando@example.com"}'
 ```
 
-Login y registro responden `{ token, tokenType, expiresIn, user }`; el registro con 201. Las consultas y actualizaciones responden `{ data }`. Los errores usan `{ error: { code, message } }`: 400 para datos inválidos, 401 para credenciales o token inválidos, 404 para recursos inexistentes, 409 para conflictos como un email ya registrado y 429 para exceso de intentos de login o registro (20 cada 15 minutos por IP).
+El perfil permite modificar `firstName`, `lastName` y `email`. Recorta espacios, normaliza el correo y rechaza duplicados. El identificador, la contraseña y el teléfono no se editan con este endpoint.
 
-## Estructura y decisiones
+Los tokens duran una hora y se validan con HS256, emisor y audiencia. No se implementaron refresh tokens ni revocación. Las contraseñas se guardan como hashes con scrypt y no aparecen en las respuestas.
 
-- `app.js`: configuración HTTP, CORS, límite de login y errores JSON.
-- `bin/www`: arranque y cierre del servidor.
-- `src/routes`: endpoints y validaciones.
-- `src/middleware`: verificación de JWT HS256, issuer y audience.
-- `src/repositories`: acceso a usuarios y escritura atómica del archivo.
-- `src/data/venues.json`: sedes ficticias y clases de demostración, reutilizables por el frontend.
-- `src/utils`: hash de contraseña con scrypt y errores.
+### Reservar y cancelar
 
-El archivo `data/users.json` se crea al iniciar por primera vez; las actualizaciones sobreviven a reinicios. Se excluye de Git. Para restablecer el usuario de prueba, detené el servidor y eliminá ese archivo. La persistencia está pensada para un único proceso local; para varias instancias conviene reemplazar el repositorio por una base de datos.
-
-El token dura una hora. El cliente cierra sesión descartándolo; esta base no implementa revocación ni refresh tokens. Solo se editan nombre, apellido y teléfono; email, contraseña e identificador no se pueden cambiar por el endpoint de perfil. El registro crea la cuenta y devuelve la sesión ya iniciada, con la misma forma que login, para que la app no tenga que pedir la contraseña dos veces; el email es único y la contraseña pide al menos 8 caracteres. Tanto login como registro admiten 20 solicitudes cada 15 minutos por IP. No hay cambio de contraseña ni baja de cuenta. Se amplió el backend con sesiones y reservas para demostrar reglas de negocio y control de capacidad; el frontend mantiene su funcionamiento local independiente.
-
-Las sedes son públicas para facilitar su consulta. Se agregó el detalle por ID para la futura pantalla de sede. Los días usan nombres en inglés y las horas `HH:mm`, en horario local de Buenos Aires. Ubicaciones y direcciones son ejemplos.
-
-## Variables de entorno
-
-- `PORT`: puerto HTTP (3000).
-- `JWT_SECRET`: obligatorio, mínimo 32 bytes; usar un valor aleatorio.
-- `CORS_ORIGIN`: origen web permitido, `*` por defecto para desarrollo. Para Expo Web podés usar, por ejemplo, `http://localhost:8081`. CORS no restringe clientes nativos.
-- `DATA_FILE`: ruta opcional del archivo de usuarios; rutas relativas se resuelven desde el directorio de ejecución.
-
-Para conectar Expo desde un teléfono, usar la IP LAN de la computadora en lugar de `localhost`. La app mobile debe conservar su funcionamiento autónomo con datos locales según la entrega.
-
-## Pruebas
-
-```sh
-npm test
-```
-
-Las pruebas usan un archivo temporal y cubren login, autorización, expiración, validación, persistencia y sedes. No modifican los datos locales.
-
-## Documentación interactiva (Swagger)
-
-Con el backend iniciado, abrí [Swagger UI](http://localhost:3000/api-docs/). La especificación OpenAPI 3.0 está disponible en [JSON](http://localhost:3000/api-docs.json) y se mantiene en `src/docs/openapi.json`.
-
-1. Expandí `POST /api/auth/login`, elegí **Try it out** y ejecutá el ejemplo con el usuario demo.
-2. Copiá el valor `token` de la respuesta.
-3. Pulsá **Authorize**, pegá el token sin el prefijo `Bearer` y confirmá.
-4. Probá `GET /api/users/me` o `PATCH /api/users/me`. Las modificaciones se guardan realmente en el perfil.
-
-La documentación incluye esquemas, ejemplos, validaciones y códigos de error. Usa el servidor desde el que se abre, por lo que también funciona al acceder por la IP LAN o con otro puerto. Swagger UI se sirve localmente, sin depender de un CDN.
-
-
-## Módulo de reservas (JavaScript)
-
-El módulo reutiliza Express, JWT, el repositorio de usuarios y el formato de errores existente. No agrega dependencias ni migra módulos que ya funcionan. Los contratos están documentados con JSDoc en `src/types/reservations.js`; no se incorpora TypeScript al backend por decisión del proyecto.
-
-### Modelo y arquitectura
-
-- **Branch** es la sede que ya existe en `src/data/venues.json`.
-- **Activity** es cada elemento de `classes` dentro de esa sede. No hay un segundo catálogo de sedes ni actividades.
-- **Session** referencia `branchId` y `activityId` e incorpora `startsAt`, `endsAt` (timestamps Unix en milisegundos UTC) y `capacity` (entero positivo).
-- **Reservation** referencia `userId` y `sessionId`, tiene estado `CONFIRMED` o `CANCELLED`, y timestamps de creación/cancelación. Se conserva el historial.
-
-Flujo: `src/routes/reservations.js` aplica la autenticación; `src/controllers/reservations.js` valida DTOs y responde HTTP; `src/services/reservations.js` aplica las reglas; `src/repositories/reservations.js` lee y confirma el archivo. `src/utils/intervals.js` contiene el algoritmo puro. No se agregaron endpoints para administrar sesiones porque no son necesarios para este alcance.
-
-### Persistencia y sesiones de ejemplo
-
-Sesiones y reservas se guardan juntas en `data/reservations.json`, excluido de Git. La variable opcional `RESERVATIONS_FILE` permite cambiar esa ruta; por defecto se usa el mismo directorio de `DATA_FILE`. El repositorio valida las referencias de sesión, intervalos, capacidad y estados; un archivo inválido falla sin ser sobrescrito.
-
-Al crear el archivo por primera vez, `src/data/session-seed.js` genera las próximas **dos semanas** a partir de los días y horarios de las actividades existentes: cada sesión dura **60 minutos** y tiene **20 cupos**. Estos son valores de demostración, no requisitos originales. Los horarios locales se convierten desde UTC-03:00 de Buenos Aires a timestamps absolutos, independientemente de la zona horaria del servidor.
-
-El calendario queda persistido y no se regenera al reiniciar. Al terminar esas dos semanas, el listado futuro estará vacío: para otra demostración, detener el servidor, respaldar el archivo y crear un calendario nuevo. Eliminar el archivo para regenerarlo también elimina su historial de reservas. No se ejecuta una renovación silenciosa ni se modifican reservas anteriores.
-
-### Reglas de negocio
-
-1. El usuario se obtiene de `req.user.id`, verificado por el JWT existente. El cliente solo envía `sessionId`; enviar `userId` u otros campos se rechaza.
-2. Debe existir la sesión y su inicio debe ser estrictamente posterior al reloj del servidor. En el instante exacto de inicio ya no se admite reserva.
-3. Un usuario solo puede tener una reserva confirmada por sesión.
-4. Solo las reservas confirmadas consumen capacidad.
-5. Un usuario no puede tener reservas confirmadas con horarios superpuestos, incluso en distintas sedes. No se contempla tiempo de traslado.
-6. Los intervalos consecutivos son válidos: 09:00–10:00 y 10:00–11:00 no generan conflicto.
-7. Cancelar una reserva propia libera el cupo. Se puede cancelar hasta antes de comenzar la sesión. Repetir una cancelación ya realizada responde 200 sin alterar su timestamp.
-8. Una reserva cancelada no bloquea horario ni cupo. Volver a reservar crea una nueva reserva y conserva la cancelada en el historial.
-9. Consultar o cancelar una reserva ajena no expone sus datos: la cancelación responde 404.
-
-Las validaciones siguen el orden usuario → sesión → inicio → duplicado → capacidad → conflicto. Si hay varias causas de rechazo simultáneas, se informa la primera según ese orden.
-
-### Algoritmo y complejidad
-
-`intervalsOverlap(a, b)` valida que cada intervalo tenga timestamps enteros, finitos y representables, y `start < end`. Usa intervalos semiabiertos `[start, end)`:
-
-```js
-startA < endB && startB < endA
-```
-
-Comparar dos intervalos cuesta **O(1)** en tiempo y espacio. La función rechaza strings o fechas locales ambiguas: el dominio trabaja únicamente con milisegundos UTC. Al mostrar fechas, el cliente debe aplicar la zona horaria correspondiente.
-
-Para reservar, se construye un mapa de sesiones y se recorren las reservas confirmadas. Con S sesiones y R reservas, la operación cuesta **O(S + R)**, incluyendo lectura, validación y escritura del JSON. No hay búsquedas de sesión anidadas por cada reserva. La consulta de sesiones ordenadas cuesta **O(R + S log S)**; listar las U reservas del usuario cuesta **O(S + R + U log U)**. El archivo completo se lee por operación: este almacenamiento está pensado para un conjunto pequeño de datos.
-
-**Sweep Line:** resulta útil para detectar todos los conflictos de un lote de N intervalos: ordenar eventos cuesta O(N log N), más el costo de emitir K conflictos si se enumeran. Para un único candidato frente a U reservas existentes, un recorrido O(U) evita ordenar de nuevo. No se implementa porque no aporta valor aquí.
-
-**Interval Tree:** un árbol balanceado permite consultar solapamientos en O(log N + K) e insertar/eliminar en O(log N), con memoria O(N). Sería útil con muchas consultas dinámicas, particionado por usuario, pero exige mantener el índice sincronizado al cancelar y persistir. En este proyecto la lectura/escritura completa del JSON dominaría el costo. Con una base de datos conviene primero una consulta indexada por usuario, estado y fecha; por ejemplo, PostgreSQL también permite restricciones de exclusión sobre rangos para proteger conflictos. No se agrega un árbol para este volumen.
-
-### Concurrencia y consistencia
-
-`repository.transaction(operation)` ejecuta **lectura → comprobaciones de negocio → modificación → validación → escritura** de manera síncrona, sin `await`, en el único hilo JavaScript del proceso. Dos requests HTTP pueden llegar simultáneamente, pero sus secciones críticas no se intercalan: la segunda lee la reserva que ya confirmó la primera. Esto protege tanto el último cupo como conflictos de un mismo usuario en sesiones distintas.
-
-Existe una guarda por ruta de archivo para impedir reentrada, incluso usando dos objetos repositorio sobre el mismo archivo. La operación debe ser síncrona; devolver una Promise se rechaza. Todos los datos se leen nuevamente por transacción, sin un caché independiente por instancia del repositorio.
-
-Se escribe un archivo temporal y se confirma con `renameSync`. Si una regla falla o la escritura falla antes del rename, no se modifica el estado anterior ni se ocupa un cupo. El temporal se limpia. La respuesta de éxito se envía después de confirmar la escritura. El rename evita archivos parcialmente escritos, pero no equivale a durabilidad garantizada ante pérdida eléctrica (no se hace fsync).
-
-**Límite explícito:** esta estrategia es para **un solo proceso Node**. No es segura con cluster, múltiples workers, múltiples servidores ni escritores externos sobre el archivo. Bloquea el event loop durante operaciones de disco y no escala para grandes volúmenes. Para varias instancias se debe usar una base transaccional: proteger la capacidad de la sesión y la exclusión horaria por usuario, mediante bloqueos/restricciones apropiados dentro de la misma transacción. Bloquear solo la sesión no protege reservas del usuario en dos sesiones diferentes.
-
-### Endpoints de reservas
-
-Todos requieren `Authorization: Bearer TOKEN_DEL_LOGIN` y aparecen en Swagger.
-
-| Método | Ruta | Resultado |
-| --- | --- | --- |
-| GET | `/api/sessions` | Sesiones futuras y sus cupos; filtros opcionales `branchId` y `activityId` |
-| GET | `/api/sessions/:id` | Sesión y capacidad restante, incluyendo sesiones pasadas |
-| POST | `/api/reservations` | Crear reserva, responde 201 |
-| GET | `/api/reservations/me` | Reservas propias confirmadas y canceladas, con detalle de sesión |
-| PATCH | `/api/reservations/:id/cancel` | Cancelar reserva propia, responde 200 |
-
-El listado incluye sesiones futuras completas con `remainingCapacity: 0`. `bookable` indica que la sesión tiene cupo y todavía no comenzó; la elegibilidad concreta del usuario se verifica al reservar. Los filtros desconocidos devuelven una lista vacía; los parámetros no admitidos o repetidos devuelven 400.
+Primero consultá los horarios disponibles:
 
 ```sh
 curl 'http://localhost:3000/api/sessions?branchId=palermo' \
   -H 'Authorization: Bearer TOKEN_DEL_LOGIN'
+```
 
-# Reemplazar SESSION_ID por un id del listado anterior.
+Usá el identificador de una sesión del listado:
+
+```sh
 curl -X POST http://localhost:3000/api/reservations \
-  -H 'Authorization: Bearer TOKEN_DEL_LOGIN' \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer TOKEN_DEL_LOGIN' \
   -d '{"sessionId":"SESSION_ID"}'
 
 curl http://localhost:3000/api/reservations/me \
@@ -187,15 +161,67 @@ curl -X PATCH http://localhost:3000/api/reservations/RESERVATION_ID/cancel \
   -H 'Authorization: Bearer TOKEN_DEL_LOGIN'
 ```
 
-Errores: **400** para DTOs/filtros inválidos; **401** para acceso no autorizado; **404** para sesión o reserva inexistente/ajena; **409** para `DUPLICATE_RESERVATION`, `SESSION_FULL`, `SCHEDULE_CONFLICT` o `SESSION_STARTED`; **500** para fallas internas de almacenamiento.
+La identidad del usuario se obtiene del JWT. El cliente no elige el dueño de la reserva.
 
-### Verificación
+## Organización y modelo de datos
 
-```sh
-npm test       # node:test: unitarias, repositorio y HTTP real en puertos temporales
-npm run check # node --check de fuentes, scripts y pruebas JavaScript
+```text
+app.js             Configuración de Express, documentación y manejo de errores
+bin/www            Inicio y cierre del servidor
+src/routes/        Rutas y validaciones de autenticación, perfil y sedes
+src/controllers/   Entrada y respuesta HTTP del módulo de reservas
+src/services/      Reglas de negocio de reservas
+src/repositories/  Lectura y escritura de archivos
+src/middleware/    Validación del JWT
+src/data/          Sedes y generación inicial de sesiones
+src/types/         Contratos de reservas con JSDoc
+src/utils/         Contraseñas, intervalos y errores
 ```
 
-Las pruebas usan reloj fijo y archivos temporales. Cubren solapamientos, intervalos contenidos/consecutivos/inválidos, offsets equivalentes, duplicados, capacidad, cancelaciones, privacidad, fallos de persistencia, rollback y solicitudes HTTP simultáneas al último cupo o a horarios superpuestos del mismo usuario. No modifican datos de desarrollo.
+El backend está escrito en JavaScript. Se mantuvo esa elección para resolver el ejercicio con Node.js sin agregar una etapa de compilación; los contratos del módulo de reservas están documentados con JSDoc.
 
-El backend no dispone de lint ni compilación TypeScript. No se agregan esas herramientas solo para este módulo JavaScript. El frontend todavía mantiene su autenticación y datos locales: esta ampliación de la API no implementa por sí sola el flujo de reservas en Zustand ni la sincronización de Home.
+Cada sede tiene dirección, coordenadas, descripción, horarios de apertura y dos actividades. Las actividades incluyen días y horas. El catálogo está en `src/data/venues.json`; las ubicaciones son datos de demostración.
+
+Una sesión representa una actividad en una sede, con inicio, fin y capacidad. Una reserva relaciona al usuario con la sesión y guarda su estado, creación y eventual cancelación. Las fechas de sesiones y reservas son timestamps UTC en milisegundos; los horarios del catálogo se interpretan en Buenos Aires.
+
+## Reglas de reservas
+
+- Solo se reservan sesiones existentes que todavía no comenzaron.
+- Un usuario no puede tener dos reservas confirmadas de la misma sesión.
+- Solo las reservas confirmadas consumen cupo.
+- Se rechazan horarios superpuestos del mismo usuario, incluso entre sedes.
+- Dos clases consecutivas se permiten; no se calcula tiempo de traslado.
+- Se puede cancelar una reserva propia antes de su inicio. La cancelación libera el cupo y conserva el historial.
+- Repetir una cancelación no cambia su fecha ni vuelve a consumir cupo. Es posible reservar nuevamente después de cancelar.
+- Consultar o cancelar una reserva ajena no expone sus datos.
+
+Para detectar superposiciones se comparan intervalos semiabiertos:
+
+```js
+startA < endB && startB < endA
+```
+
+La comparación cuesta O(1). Para una nueva reserva se recorren las reservas existentes, sin ordenar todos los intervalos. Con S sesiones y R reservas, la operación completa cuesta O(S + R), incluida la lectura del JSON. Un árbol de intervalos o un algoritmo de barrido no aportarían una mejora relevante para el volumen de este ejercicio.
+
+## Persistencia y límites
+
+Los usuarios se guardan en `data/users.json`; las sesiones y reservas, en `data/reservations.json`. Se crean cuando no existen y conservan los cambios al reiniciar, siempre que el almacenamiento del servidor mantenga esos archivos. En un despliegue con disco efímero, un redeploy puede perderlos; no se incluye una base de datos externa.
+
+Al crear el archivo de reservas se generan dos semanas de sesiones desde el catálogo, con duración de 60 minutos y 20 cupos por sesión. Son valores de demostración. El calendario no se renueva automáticamente: cuando termine ese período no habrá sesiones futuras. Para preparar otra demostración, detené el servidor y respaldá los datos antes de regenerar el archivo; eliminarlo también elimina el historial de reservas.
+
+La escritura usa un archivo temporal y un rename para evitar dejar un JSON parcial. Las comprobaciones y la modificación de reservas se ejecutan juntas, de forma síncrona, en un único proceso Node. Así dos solicitudes al último cupo no se intercalan dentro de ese proceso.
+
+Esta solución alcanza para el challenge, pero no es segura para varios procesos, instancias o escritores externos. También bloquea el event loop durante el acceso a disco y no garantiza durabilidad ante una pérdida eléctrica. Para escalar habría que usar una base transaccional que proteja capacidad y conflictos horarios en la misma operación.
+
+El registro de usuarios y el módulo de reservas amplían el alcance mínimo para probar cuentas reales y aplicar las mismas reglas en el servidor. No se agregaron endpoints de administración de sesiones, recuperación de contraseña ni baja de cuenta.
+
+## Pruebas
+
+```sh
+npm test
+npm run check
+```
+
+Las pruebas cubren autenticación, perfil, persistencia, sedes, conflictos horarios, capacidad, cancelación, privacidad y solicitudes simultáneas. Usan archivos y servidores temporales; no modifican los datos de desarrollo. `npm run check` verifica la sintaxis de los archivos JavaScript.
+
+La API también incluye una colección de [Postman](postman/collections/sportclub-api.postman_collection.json) y un [entorno local](postman/environments/local.postman_environment.json). Swagger permite revisar los contratos actuales sin instalar otra herramienta.
