@@ -22,7 +22,7 @@
         "android.permission.CAMERA"
       ],
       "package": "com.fernandommarina.SportClubChallenge",
-      "versionCode": 2,
+      "versionCode": 3,
       "intentFilters": [
         {
           "action": "VIEW",
