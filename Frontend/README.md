@@ -135,8 +135,6 @@ La autenticación y el perfil se integran con la API. El flujo de reservas usa Z
 El ojo junto a la contraseña alterna entre mostrarla y ocultarla; no cambia su valor. La contraseña se oculta inicialmente y al volver al login tras cerrar sesión.
 
 
-
-
 ### Selección automática del acceso
 
 El formulario no tiene selector de modo. Al ingresar `demo@sportclub.com` con `SportClub123!`, autentica localmente y no hace solicitudes HTTP. El email se normaliza (minúsculas y espacios externos), pero la contraseña debe coincidir exactamente. Con cualquier otra combinación válida se usa Axios y el backend, incluso si el email es el de demo pero la contraseña no coincide. Campos inválidos se rechazan antes de consultar el servidor.
@@ -148,7 +146,7 @@ El ojo para mostrar y ocultar la contraseña y los íconos de copia permanecen d
 
 Perfil → Editar información personal permite cambiar nombre, apellido y correo. `PATCH /api/users/me` requiere JWT, recorta espacios, normaliza el email y rechaza correos duplicados (409). La respuesta confirmada actualiza únicamente `user` en Zustand; conserva token y vencimiento. Cancelar antes de guardar descarta el formulario. Salir durante una solicitud no revierte una escritura ya enviada; una respuesta tardía nunca restaura una sesión cerrada.
 
-La cuenta demo local no tiene JWT y muestra un aviso con el guardado deshabilitado. Para probar persistencia real, ingresar con una cuenta del backend (distinta de la combinación demo local). No se simulan actualizaciones. En Android configurar `EXPO_PUBLIC_API_URL` con una dirección accesible desde el dispositivo; por ejemplo `http://10.0.2.2:3000/api` para el emulador estándar, o la IP LAN del equipo para un dispositivo físico.
+La cuenta demo permite editar nombre, apellido y correo sin conexión. Los datos se validan y normalizan, y se actualizan en Zustand: Perfil e Inicio muestran los cambios de inmediato. Se conserva el identificador del usuario para mantener las reservas de la sesión. No se envía HTTP ni se crea un JWT. Los cambios duran hasta cerrar sesión o reiniciar la app; las credenciales demo originales siguen siendo las de ingreso. Para probar persistencia en el servidor, ingresar con una cuenta del backend (distinta de la combinación demo local). En Android configurar `EXPO_PUBLIC_API_URL` con una dirección accesible desde el dispositivo; por ejemplo `http://10.0.2.2:3000/api` para el emulador estándar, o la IP LAN del equipo para un dispositivo físico.
 
 Verificaciones: `npm run test:auth`, `npm run typecheck`, `npm run lint` en Frontend; `npm test` en Backend. Prueba manual Android: ingresar con JWT, editar cada campo, guardar y comprobar Perfil; repetir ingreso usando el nuevo correo; probar cancelar, correo duplicado, error de red, botón Atrás y cerrar sesión. La sesión permanece en memoria, como antes.
 

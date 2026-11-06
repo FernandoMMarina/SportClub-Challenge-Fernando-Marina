@@ -107,8 +107,8 @@ test('Zustand: no restaura sesión cerrada ni pisa una nueva sesión con respues
   }
 });
 
-test('Zustand: impide guardar en sesión local, vencida o con identidad ajena', async () => {
-  for (const invalidSession of [{ ...session, token: null, source: 'local' }, { ...session, expiresAt: 0 }]) {
+test('Zustand: impide guardar en sesión vencida, API sin token o con identidad ajena', async () => {
+  for (const invalidSession of [{ ...session, token: null }, { ...session, expiresAt: 0 }]) {
     const store = createAuthStore(async () => invalidSession, async () => { assert.fail('No debe enviar HTTP'); });
     await store.getState().signIn('', '');
     await assert.rejects(() => store.getState().updateUser(updated));
@@ -118,4 +118,31 @@ test('Zustand: impide guardar en sesión local, vencida o con identidad ajena', 
   await store.getState().signIn('', '');
   await assert.rejects(() => store.getState().updateUser(updated), /otro usuario/);
   assert.deepEqual(store.getState().user, user);
+});
+
+
+test('perfil demo: guarda y normaliza localmente sin HTTP, conservando identidad y sesión', async () => {
+  const local = { user, source: 'local', token: null, expiresAt: null };
+  const store = createAuthStore(async () => local, async () => { assert.fail('La cuenta demo no debe enviar HTTP'); });
+  await store.getState().signIn('', '');
+  assert.equal(await store.getState().updateUser(user), false);
+  assert.equal(await store.getState().updateUser({ ...updated, firstName: ' Andrea ', lastName: ' Pérez ', email: ' ANDREA@EXAMPLE.COM ', id: 'otro', phone: 'alterado' }), true);
+  assert.deepEqual(store.getState().user, updated);
+  assert.equal(store.getState().source, 'local');
+  assert.equal(store.getState().token, null);
+  assert.equal(store.getState().expiresAt, null);
+  store.getState().signOut();
+  await assert.rejects(() => store.getState().updateUser(updated), /Volvé a ingresar/);
+  await store.getState().signIn('', '');
+  assert.deepEqual(store.getState().user, user);
+});
+
+test('perfil demo: rechaza datos inválidos sin modificar el usuario ni enviar HTTP', async () => {
+  const store = createAuthStore(async () => ({ user, source: 'local', token: null, expiresAt: null }), async () => { assert.fail('No debe enviar HTTP'); });
+  await store.getState().signIn('', '');
+  for (const input of [{ ...updated, firstName: '' }, { ...updated, lastName: ' ' }, { ...updated, email: 'invalid' }]) {
+    await assert.rejects(() => store.getState().updateUser(input), error => Object.keys(error.fields).length > 0);
+    assert.deepEqual(store.getState().user, user);
+  }
+  assert.equal(await store.getState().updateUser(updated), true);
 });

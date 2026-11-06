@@ -34,7 +34,7 @@ export default function EditProfileScreen() {
   }
 
   async function save() {
-    if (lock.current || !user || source !== 'api' || !hasProfileChanges(input, user)) return;
+    if (lock.current || !user || !hasProfileChanges(input, user)) return;
     const invalid = validateProfile(input);
     setErrors(invalid);
     setFailure(null);
@@ -62,7 +62,7 @@ export default function EditProfileScreen() {
   }
 
   if (!user) return null;
-  const disabled = saving || source !== 'api' || !hasProfileChanges(input, user);
+  const disabled = saving || !hasProfileChanges(input, user);
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -75,10 +75,10 @@ export default function EditProfileScreen() {
           <Image accessibilityLabel="Avatar de tu perfil" style={styles.avatar}
             source={{ uri: `https://api.dicebear.com/10.x/avataaars/png?seed=${encodeURIComponent(user.id)}` }} />
           <Text style={styles.subtitle}>Mantené tus datos personales actualizados.</Text>
-          {source !== 'api' ? (
+          {source === 'local' ? (
             <View style={styles.notice}>
               <Text style={styles.noticeTitle}>Cuenta de demostración</Text>
-              <Text style={styles.noticeText}>Para guardar cambios, ingresá con una cuenta conectada al servidor.</Text>
+              <Text style={styles.noticeText}>Los cambios se guardan en esta sesión, sin conexión. Al cerrar sesión o reiniciar la app se restablece el perfil demo.</Text>
             </View>
           ) : null}
           {fields.map((key, index) => (
@@ -117,7 +117,7 @@ export default function EditProfileScreen() {
               <Text style={styles.cancelLabel}>Cancelar</Text>
             </Pressable>
           </View>
-          {saving ? <Text style={styles.message}>El guardado ya está en curso. Volver al perfil no cancela la solicitud enviada.</Text> : null}
+          {saving && source === 'api' ? <Text style={styles.message}>El guardado ya está en curso. Volver al perfil no cancela la solicitud enviada.</Text> : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   title: { color: theme.colors.text, fontSize: 24, lineHeight: 30, fontWeight: '700' },
   subtitle: { color: '#b9bbc1', fontSize: 14, lineHeight: 21, textAlign: 'center' },
   avatar: { width: 88, height: 88, borderRadius: 44, alignSelf: 'center' },
-  notice: { padding: theme.spacing.medium, gap: 4, backgroundColor: '#202020', borderRadius: 12, borderLeftWidth: 3, borderLeftColor: theme.colors.buttonBackground },
+  notice: { padding: theme.spacing.medium, gap: 4, backgroundColor: '#202020', borderRadius: 12 },
   noticeTitle: { color: theme.colors.text, fontSize: 14, fontWeight: '600' },
   noticeText: { color: '#b9bbc1', fontSize: 14, lineHeight: 21 },
   field: { gap: theme.spacing.small, marginTop: 4 },

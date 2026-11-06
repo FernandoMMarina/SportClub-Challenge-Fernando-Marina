@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { hasProfileChanges, ProfileError, updateProfile, type ProfileInput } from '../services/profile-service.ts';
+import { hasProfileChanges, normalizeProfile, ProfileError, updateProfile, validateProfile, type ProfileInput } from '../services/profile-service.ts';
 import { AuthError } from '../services/auth-service.ts';
 import { authenticateSession } from '../services/session-service.ts';
 import type { AuthSession } from '../types/auth';
@@ -33,13 +33,20 @@ export function createAuthStore(authenticate = authenticateSession, saveProfile 
     },
     updateUser: async (input) => {
       const session = get();
-      if (!session.user || session.source !== 'api' || !session.token) {
-        throw new ProfileError('La cuenta demo usa una sesión local. Para guardar cambios necesitás una sesión autenticada con la API.');
+      if (!session.user || !session.source) {
+        throw new ProfileError('Volvé a ingresar para guardar tus datos.');
       }
       if (session.expiresAt !== null && session.expiresAt <= Date.now()) {
         throw new ProfileError('Tu sesión venció. Cerrá sesión y volvé a ingresar.');
       }
+      const fields = validateProfile(input);
+      if (Object.keys(fields).length) throw new ProfileError('Revisá los campos indicados.', fields);
       if (saving || !hasProfileChanges(input, session.user)) return false;
+      if (session.source === 'local') {
+        set({ user: { ...session.user, ...normalizeProfile(input) } });
+        return true;
+      }
+      if (!session.token) throw new ProfileError('Volvé a ingresar para guardar tus datos.');
       saving = true;
       const attempt = currentAttempt;
       try {
