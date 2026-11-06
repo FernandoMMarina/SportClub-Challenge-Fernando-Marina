@@ -195,3 +195,22 @@ test('PATCH impide correos duplicados sin escritura parcial ni exposición de ca
   assert.equal(publicUser(data[1]).passwordHash, undefined);
   assert.equal((await request('/api/users/me', 'PATCH', { email: ' DEMO@sportclub.com ' }, token)).status, 200);
 });
+
+
+test('App Links: asociación pública del certificado y páginas de sede', async () => {
+  const response = await fetch(base + '/.well-known/assetlinks.json');
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /application\/json/);
+  assert.equal(response.redirected, false);
+  const links = await response.json();
+  assert.deepEqual(links[0].relation, ['delegate_permission/common.handle_all_urls']);
+  assert.equal(links[0].target.package_name, 'com.fernandommarina.SportClubChallenge');
+  assert.match(links[0].target.sha256_cert_fingerprints[0], /^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$/);
+  for (const id of ['palermo', 'belgrano']) {
+    const page = await fetch(base + '/venues/' + id);
+    assert.equal(page.status, 200);
+    assert.match(page.headers.get('content-type'), /text\/html/);
+    assert.ok((await page.text()).includes(`sportclubchallenge://venues/${id}`));
+  }
+  assert.equal((await fetch(base + '/venues/no-existe')).status, 404);
+});

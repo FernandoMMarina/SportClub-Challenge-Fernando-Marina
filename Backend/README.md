@@ -95,6 +95,8 @@ Las rutas protegidas requieren `Authorization: Bearer TOKEN`.
 | Método | Ruta | Acceso | Resultado |
 | --- | --- | --- | --- |
 | GET | `/health` | Público | Estado del servidor |
+| GET | `/.well-known/assetlinks.json` | Público | Asociación del dominio con la firma Android |
+| GET | `/venues/:id` | Público | Página para abrir una sede en la app |
 | POST | `/api/auth/login` | Público | Inicia sesión y devuelve JWT y usuario |
 | POST | `/api/auth/register` | Público | Crea una cuenta e inicia sesión |
 | GET | `/api/users/me` | JWT | Obtiene el perfil |
@@ -225,3 +227,12 @@ npm run check
 Las pruebas cubren autenticación, perfil, persistencia, sedes, conflictos horarios, capacidad, cancelación, privacidad y solicitudes simultáneas. Usan archivos y servidores temporales; no modifican los datos de desarrollo. `npm run check` verifica la sintaxis de los archivos JavaScript.
 
 La API también incluye una colección de [Postman](postman/collections/sportclub-api.postman_collection.json) y un [entorno local](postman/environments/local.postman_environment.json). Swagger permite revisar los contratos actuales sin instalar otra herramienta.
+
+
+## Asociación con Android
+
+`src/config/assetlinks.json` contiene el nombre del paquete y la huella SHA-256 pública del certificado de firma de la APK con App Links. Se sirve como JSON en `/.well-known/assetlinks.json`, sin login ni redirección. El certificado público no permite firmar APK; la clave privada se guarda fuera del repositorio.
+
+Los enlaces públicos `/venues/palermo` y `/venues/belgrano` abren la app cuando Android verificó el dominio y la firma instalada coincide. Si el enlace se abre en el navegador, se muestra una página con el nombre de la sede y un botón para abrir SportClub. Las rutas `/api/venues` mantienen sus respuestas JSON.
+
+La asociación requiere que este backend esté desplegado en `sportclub-challenge-fernando-marina.onrender.com`. Al cambiar el certificado hay que actualizar la huella del JSON y desplegarlo antes de verificar los enlaces en el dispositivo.

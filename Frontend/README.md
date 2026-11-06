@@ -145,7 +145,16 @@ Abrí alguno de estos códigos en otra pantalla y escanealo desde el botón cent
 - [QR de Palermo](assets/qr/palermo.png)
 - [QR de Belgrano](assets/qr/belgrano.png)
 
-El lector admite los identificadores `palermo` y `belgrano`, y las URLs `sportclubchallenge://venues/palermo` y `sportclubchallenge://venues/belgrano`. Un código de una sede desconocida o de otro contenido muestra un error y permite volver a intentar. No abre URLs arbitrarias.
+Los QR contienen enlaces HTTPS para que también se puedan leer con una cámara externa:
+
+- `https://sportclub-challenge-fernando-marina.onrender.com/venues/palermo`
+- `https://sportclub-challenge-fernando-marina.onrender.com/venues/belgrano`
+
+Android App Links verifica la asociación con Render a través de `/.well-known/assetlinks.json`. Se necesita la app 1.0.1 o posterior, firmada con el certificado de distribución incluido en ese archivo, y conexión para la verificación inicial del dominio. La clave privada no se incluye en Git. Una compilación firmada con la clave debug no queda asociada automáticamente.
+
+Si Android no abre la app, la URL muestra una página de la sede con un botón para abrir SportClub. La cámara debe reconocer el QR como enlace; algunas aplicaciones externas pueden aplicar sus propias reglas de apertura.
+
+El escáner interno acepta esas URLs, los identificadores `palermo` y `belgrano` y los esquemas anteriores `sportclubchallenge://venues/palermo` y `sportclubchallenge://venues/belgrano`. Rechaza otros dominios y sedes desconocidas.
 
 Para probar un deep link por USB, con la app instalada y la sesión iniciada:
 
@@ -158,7 +167,7 @@ adb shell am start -W \
 
 Debe abrir el detalle de Palermo. Si Android indica que entregó el intent a la instancia actual, la app ya estaba abierta; eso no es un error. Confirmá también que la pantalla haya cambiado.
 
-Las rutas están protegidas por el login. Si reiniciás por completo la app, la sesión se pierde y el enlace puede llevar al ingreso; no se implementó la recuperación del destino original después de autenticarse. Los permisos de cámara y los deep links deben verificarse en una compilación nativa. El escaneo se prueba en un teléfono con cámara.
+Las rutas están protegidas por el login. Si el enlace llega sin sesión, se guarda la sede de destino en memoria, se muestra el login y se abre esa sede después de autenticarse. No se persiste el token ni el destino al cerrar el proceso. Los permisos de cámara y los deep links deben verificarse en una compilación nativa. El escaneo se prueba en un teléfono con cámara.
 
 ## Pruebas y comprobaciones
 
@@ -173,3 +182,21 @@ Aunque se llama `test:auth`, el comando ejecuta todos los archivos de `test/`: a
 ESLint revisa las fuentes y los tests. Los tests se analizan como módulos de Node con sintaxis ECMAScript 2025, que admite los atributos de importación del JSON. Las carpetas generadas por Expo y los archivos compilados quedan fuera de esa revisión.
 
 Para una revisión manual, probá errores de credenciales, permisos de cámara denegados, un QR inválido, reservas duplicadas o superpuestas, cancelación y edición de perfil sin conexión. Para cuentas API, comprobá también la respuesta ante pérdida de conexión y sesión vencida.
+
+
+### Verificar Android App Links
+
+Después de desplegar el backend y de instalar la APK firmada, conectá el teléfono con internet y ejecutá:
+
+```sh
+adb shell pm verify-app-links --re-verify com.fernandommarina.SportClubChallenge
+adb shell pm get-app-links com.fernandommarina.SportClubChallenge
+```
+
+La verificación es asíncrona. El dominio de Render debe aparecer como `verified`. Para probar la resolución del sistema, sin forzar un paquete:
+
+```sh
+adb shell am start -W -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d "https://sportclub-challenge-fernando-marina.onrender.com/venues/palermo"
+```
+
+Si cambia la clave de firma o el dominio, hay que actualizar la asociación del servidor y generar otra APK. La firma local de desarrollo del comando de compilación anterior no reemplaza este certificado: para reproducir la APK con App Links usá Generate Signed APK de Android Studio con la clave de distribución correspondiente.

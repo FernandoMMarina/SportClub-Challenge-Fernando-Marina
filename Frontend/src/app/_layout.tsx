@@ -1,3 +1,4 @@
+import { router, useRootNavigationState } from 'expo-router';
 import { Stack } from 'expo-router/stack';
 import { ThemeProvider } from 'expo-router/react-navigation';
 import { StatusBar } from 'expo-status-bar';
@@ -6,6 +7,7 @@ import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
 import { useAuthStore } from '@/stores/auth-store';
+import { usePendingVenueStore } from '@/stores/pending-venue-store';
 import { navigationTheme } from '@/theme/navigation';
 
 // Expo Router oculta el splash nativo apenas monta el árbol de navegación.
@@ -13,9 +15,18 @@ import { navigationTheme } from '@/theme/navigation';
 SplashScreen.setOptions({ duration: 400, fade: true });
 
 export default function RootLayout() {
+  const navigationState = useRootNavigationState();
+  const pendingVenueId = usePendingVenueStore((state) => state.venueId);
+
   const isAuthenticated = useAuthStore((state) => state.user !== null);
   const expiresAt = useAuthStore((state) => state.expiresAt);
   const signOut = useAuthStore((state) => state.signOut);
+
+  useEffect(() => {
+    if (!navigationState?.key || !isAuthenticated || !pendingVenueId) return;
+    usePendingVenueStore.getState().setVenue(null);
+    router.replace({ pathname: '/venues/[id]', params: { id: pendingVenueId } });
+  }, [navigationState?.key, isAuthenticated, pendingVenueId]);
 
   useEffect(() => {
     if (expiresAt === null) return;

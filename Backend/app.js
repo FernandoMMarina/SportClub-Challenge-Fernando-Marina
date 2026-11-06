@@ -1,4 +1,5 @@
 const express = require('express');
+const { createAppLinksRouter } = require('./src/routes/app-links');
 const cors = require('cors');
 const morgan = require('morgan');
 const { rateLimit } = require('express-rate-limit');
@@ -22,6 +23,7 @@ function createApp(options = {}) {
     swaggerOptions: { validatorUrl: null },
     customSiteTitle: 'SportClub API — Swagger UI',
   }));
+  app.use(createAppLinksRouter());
   app.get('/health', (req, res) => res.json({ status: 'ok' }));
   // Endpoints públicos que escriben o verifican credenciales: un límite por IP cada uno.
   const authLimiter = limit => rateLimit({ windowMs: 15 * 60 * 1000, limit,

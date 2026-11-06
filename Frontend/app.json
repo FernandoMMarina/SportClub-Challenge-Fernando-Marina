@@ -2,7 +2,7 @@
   "expo": {
     "name": "SportClub-Challenge",
     "slug": "SportClub-Challenge",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "sportclubchallenge",
@@ -21,7 +21,25 @@
       "permissions": [
         "android.permission.CAMERA"
       ],
-      "package": "com.fernandommarina.SportClubChallenge"
+      "package": "com.fernandommarina.SportClubChallenge",
+      "versionCode": 2,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "sportclub-challenge-fernando-marina.onrender.com",
+              "pathPrefix": "/venues/"
+            }
+          ]
+        }
+      ]
     },
     "web": {
       "output": "server",

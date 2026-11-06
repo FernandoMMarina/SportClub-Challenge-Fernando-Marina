@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.fernandommarina.SportClubChallenge",
+      "sha256_cert_fingerprints": [
+        "5D:31:C6:9D:E5:5B:07:2B:FA:04:9A:EE:ED:27:2A:3F:D8:79:7B:35:09:E7:22:73:27:3E:E2:CC:7D:96:BF:6A"
+      ]
+    }
+  }
+]

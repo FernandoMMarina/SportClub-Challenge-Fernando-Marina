@@ -91,7 +91,7 @@ Para ejecutar la API en tu computadora, seguí el [README del backend](Backend/R
 4. Usá Ver mis reservas en la confirmación o volvé a Inicio para consultar la clase.
 5. Cancelá una reserva y comprobá que la app pida confirmación y actualice el listado.
 6. Desde Perfil, editá nombre, apellido o correo y verificá los cambios.
-7. Abrí el escáner QR y apuntá a uno de los [códigos de ejemplo](Frontend/README.md#qr-y-deep-links).
+7. Abrí el escáner QR y apuntá a uno de los [códigos de ejemplo](Frontend/README.md#qr-y-deep-links). En Android 1.0.1 o posterior también podés abrirlos desde una cámara externa, con el dominio verificado y la APK firmada con el certificado asociado.
 8. Cerrá sesión y comprobá que vuelva al login.
 
 Para verificar el funcionamiento autónomo, repetí el recorrido con una APK release, sin Metro y sin conexión. La carga del avatar remoto de Perfil requiere internet, pero no interviene en el ingreso ni en las operaciones locales.
