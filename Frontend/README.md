@@ -170,6 +170,6 @@ npm run lint
 
 Aunque se llama `test:auth`, el comando ejecuta todos los archivos de `test/`: autenticación, edición local y por API, reservas y reglas de horarios. Usa servidores HTTP temporales y no modifica datos del backend de desarrollo ni de Render.
 
-El lint completo tiene incidencias conocidas en los tests: referencias a `Buffer` sin declarar y el parseo de un import con atributos. Se pueden revisar las fuentes por separado con `npx eslint src --no-cache`. Esto no reemplaza la corrección pendiente del lint de los tests.
+ESLint revisa las fuentes y los tests. Los tests se analizan como módulos de Node con sintaxis ECMAScript 2025, que admite los atributos de importación del JSON. Las carpetas generadas por Expo y los archivos compilados quedan fuera de esa revisión.
 
 Para una revisión manual, probá errores de credenciales, permisos de cámara denegados, un QR inválido, reservas duplicadas o superpuestas, cancelación y edición de perfil sin conexión. Para cuentas API, comprobá también la respuesta ante pérdida de conexión y sesión vencida.

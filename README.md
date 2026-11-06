@@ -123,4 +123,4 @@ npm test
 npm run check
 ```
 
-Las pruebas automatizadas cubren autenticación, edición de perfil, reservas y reglas de negocio. El lint completo del frontend tiene incidencias conocidas en algunos archivos de prueba; el detalle está en su README. Las comprobaciones automáticas no reemplazan la prueba de la APK y de la cámara en un dispositivo real.
+Las pruebas automatizadas cubren autenticación, edición de perfil, reservas y reglas de negocio. Las comprobaciones automáticas no reemplazan la prueba de la APK y de la cámara en un dispositivo real.

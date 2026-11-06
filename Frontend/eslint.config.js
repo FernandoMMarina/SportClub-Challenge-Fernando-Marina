@@ -5,6 +5,10 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*'],
+    files: ['test/**/*.mjs'],
+    languageOptions: { ecmaVersion: 2025, sourceType: 'module' },
+  },
+  {
+    ignores: ['dist/**', '.expo/**'],
   },
 ]);
