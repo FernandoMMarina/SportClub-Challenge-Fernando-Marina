@@ -1,8 +1,16 @@
 import { Stack } from 'expo-router/stack';
+import { ThemeProvider } from 'expo-router/react-navigation';
+import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
 import { useAuthStore } from '@/stores/auth-store';
+import { navigationTheme } from '@/theme/navigation';
+
+// Expo Router oculta el splash nativo apenas monta el árbol de navegación.
+// Solo configuramos el fundido para que la transición no sea un corte seco.
+SplashScreen.setOptions({ duration: 400, fade: true });
 
 export default function RootLayout() {
   const isAuthenticated = useAuthStore((state) => state.user !== null);
@@ -23,16 +31,19 @@ export default function RootLayout() {
   }, [expiresAt, signOut]);
 
   return (
-    <Stack>
-      <Stack.Protected guard={!isAuthenticated}>
-        <Stack.Screen name="login" options={{ title: 'Iniciar sesión' }} />
-      </Stack.Protected>
-      <Stack.Protected guard={isAuthenticated}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="my-reservations" options={{ headerShown: false }} />
-        <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
-        <Stack.Screen name="scan-qr" options={{ presentation: 'fullScreenModal', headerShown: false }} />
-      </Stack.Protected>
-    </Stack>
+    <ThemeProvider value={navigationTheme}>
+      <StatusBar style="light" />
+      <Stack>
+        <Stack.Protected guard={!isAuthenticated}>
+          <Stack.Screen name="login" options={{ title: 'Iniciar sesión' }} />
+        </Stack.Protected>
+        <Stack.Protected guard={isAuthenticated}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="my-reservations" options={{ headerShown: false }} />
+          <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+          <Stack.Screen name="scan-qr" options={{ presentation: 'fullScreenModal', headerShown: false }} />
+        </Stack.Protected>
+      </Stack>
+    </ThemeProvider>
   );
 }

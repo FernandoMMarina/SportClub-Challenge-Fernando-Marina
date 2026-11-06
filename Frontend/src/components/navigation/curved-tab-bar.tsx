@@ -1,20 +1,20 @@
 import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/tabs';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { theme } from '@/theme';
 
 import { CurvedBarBackground } from './curved-bar-background';
+import { NavigationIcon, type NavigationIconName } from './navigation-icon';
 
 const BAR_HEIGHT = 72;
 const CIRCLE_SIZE = 60;
-const FLOAT_OFFSET = 28;
-const tabs: Record<string, { label: string; icon: SymbolViewProps['name'] }> = {
-  index: { label: 'Inicio', icon: { ios: 'house', android: 'home', web: 'home' } },
-  venues: { label: 'Escanear QR', icon: { ios: 'qrcode.viewfinder', android: 'qr_code_scanner', web: 'qr_code_scanner' } },
-  profile: { label: 'Perfil', icon: { ios: 'person', android: 'person', web: 'person' } },
+const FLOAT_OFFSET = 12;
+const tabs: Record<string, { label: string; icon: NavigationIconName }> = {
+  index: { label: 'Inicio', icon: 'home' },
+  venues: { label: 'Escanear QR', icon: 'qr' },
+  profile: { label: 'Perfil', icon: 'profile' },
 };
 
 export function CurvedTabBar({ state, descriptors, emitter, navigateToTab, insets }: BottomTabBarProps) {
@@ -54,7 +54,7 @@ export function CurvedTabBar({ state, descriptors, emitter, navigateToTab, inset
               onLongPress={() => emitter.emit({ type: 'tabLongPress', target: route.key })}
               style={({ pressed }) => [styles.tab, central && styles.centralTab, pressed && styles.pressed]}>
               <View style={central ? [styles.circle, selected && styles.selectedCircle] : styles.icon}>
-                <SymbolView name={tab.icon} size={26} tintColor={color} />
+                <NavigationIcon name={tab.icon} size={central ? 30 : 28} color={color} />
               </View>
               {!central && <Text style={[styles.label, { color: selected ? '#ff0000' : theme.colors.textSecondary }]}>{tab.label}</Text>}
             </Pressable>
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'flex-start', paddingTop: FLOAT_OFFSET },
   tab: { flex: 1, minHeight: BAR_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 4 },
   centralTab: { marginTop: -FLOAT_OFFSET, minHeight: BAR_HEIGHT + FLOAT_OFFSET, justifyContent: 'flex-start', gap: 8 },
-  icon: { height: 28, justifyContent: 'center' },
+  icon: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   circle: { width: CIRCLE_SIZE, height: CIRCLE_SIZE, borderRadius: CIRCLE_SIZE / 2,
     backgroundColor: '#ff0404', alignItems: 'center', justifyContent: 'center', borderWidth: 0 },
   selectedCircle: { backgroundColor: '#fa0606' },

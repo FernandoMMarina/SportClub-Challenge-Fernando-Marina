@@ -139,7 +139,7 @@ export default function LoginScreen() {
               <Pressable accessibilityRole="button" accessibilityLabel="Copiar correo electrónico"
                 disabled={isSubmitting || copyStatus === 'copying'} onPress={() => handleCopyDemo('email')}
                 style={({ pressed }) => [styles.copyButton, pressed && styles.copyPressed]}>
-                <Feather name="copy" size={20} color={theme.colors.textSecondary} />
+                <Feather name="copy" size={20} color={theme.colors.textOnLight} />
               </Pressable>
             </View>
             <View style={styles.demoRow}>
@@ -147,7 +147,7 @@ export default function LoginScreen() {
               <Pressable accessibilityRole="button" accessibilityLabel="Copiar contraseña"
                 disabled={isSubmitting || copyStatus === 'copying'} onPress={() => handleCopyDemo('password')}
                 style={({ pressed }) => [styles.copyButton, pressed && styles.copyPressed]}>
-                <Feather name="copy" size={20} color={theme.colors.textSecondary} />
+                <Feather name="copy" size={20} color={theme.colors.textOnLight} />
               </Pressable>
             </View>
             {copyStatus === 'copied' ? <Text accessibilityLiveRegion="polite" style={styles.demoSuccess}>
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   brand: { fontSize: 32, fontWeight: '800', color: theme.colors.text },
   passwordContainer: { position: 'relative' },
   passwordToggle: { position: 'absolute', right: 0, top: 4, width: 48, height: 44, alignItems: 'center', justifyContent: 'center' },
-  intro: { fontSize: 17, lineHeight: 25, color: theme.colors.textSecondary },
+  intro: { fontSize: 17, lineHeight: 25, color: theme.colors.textOnLight },
   fieldError: { color: '#ff8a80', fontSize: 15, lineHeight: 22 },
   formError: { gap: 8, padding: 16, borderRadius: 8, backgroundColor: '#351b1b' },
   formErrorTitle: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   demoTitle: { fontWeight: '600', color: '#151515', fontSize: 15 , alignItems: 'center', textAlign: 'center'},
   demoSuccess: { color: '#176b46', fontSize: 14, lineHeight: 20 },
   demoError: { color: '#b42318', fontSize: 14, lineHeight: 20 },
-  demoText: { color: theme.colors.textSecondary, fontSize: 14, flex: 1 },
+  demoText: { color: theme.colors.textOnLight, fontSize: 14, flex: 1 },
   demoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   copyButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   copyPressed: { opacity: 0.5 },

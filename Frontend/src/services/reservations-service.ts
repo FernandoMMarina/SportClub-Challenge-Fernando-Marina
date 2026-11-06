@@ -2,7 +2,7 @@ import { isAxiosError, type AxiosInstance } from 'axios';
 import { createApiClient } from './api-client.ts';
 import { mapApiAuthError } from './api-auth-service.ts';
 
-export type Session = { id: string; branchId: string; activityId: string; startsAt: number; endsAt: number; capacity: number };
+export type Session = { id: string; branchId: string; activityId: string; startsAt: number; endsAt: number; capacity: number; remainingCapacity?: number };
 
 function isSession(value: unknown): value is Session {
   if (!value || typeof value !== 'object') return false;
