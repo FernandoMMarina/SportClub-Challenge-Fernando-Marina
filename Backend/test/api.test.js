@@ -205,7 +205,10 @@ test('App Links: asociación pública del certificado y páginas de sede', async
   const links = await response.json();
   assert.deepEqual(links[0].relation, ['delegate_permission/common.handle_all_urls']);
   assert.equal(links[0].target.package_name, 'com.fernandommarina.SportClubChallenge');
-  assert.match(links[0].target.sha256_cert_fingerprints[0], /^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$/);
+  const fingerprints = links[0].target.sha256_cert_fingerprints;
+  assert.equal(new Set(fingerprints).size, fingerprints.length);
+  for (const fingerprint of fingerprints) assert.match(fingerprint, /^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$/);
+  assert.ok(fingerprints.includes('6A:32:B9:FB:D3:AD:10:67:3A:83:FD:7E:4E:07:AD:C3:FE:70:8D:FF:9C:50:0A:9E:56:E2:32:58:47:70:05:2B'));
   for (const id of ['palermo', 'belgrano']) {
     const page = await fetch(base + '/venues/' + id);
     assert.equal(page.status, 200);
